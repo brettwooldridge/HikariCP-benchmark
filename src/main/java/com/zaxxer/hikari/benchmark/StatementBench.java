@@ -60,6 +60,7 @@ public class StatementBench
     @Setup
     public void setup()
     {
+        // Setup HikariCP
         HikariConfig config = new HikariConfig();
         config.setAcquireIncrement(5);
         config.setConnectionTimeout(8000);
@@ -70,6 +71,7 @@ public class StatementBench
 
         hikariDS = new HikariDataSource(config);
 
+        // Setup BoneCP
         try
         {
             Class.forName("com.zaxxer.hikari.benchmark.StubDriver");
@@ -94,6 +96,7 @@ public class StatementBench
 
         boneDS = new BoneCPDataSource(bconfig);
 
+        // Setup Tomcat-JDBC
         PoolProperties p = new PoolProperties();
         p.setUrl("jdbc:stub");
         p.setDriverClassName("com.zaxxer.hikari.benchmark.StubDriver");
@@ -124,7 +127,7 @@ public class StatementBench
         return test(state.connection);
     }
 
-    @GenerateMicroBenchmark
+    // @GenerateMicroBenchmark
     public PreparedStatement testTomcat(TomcatState state)
     {
         return test(state.connection);
