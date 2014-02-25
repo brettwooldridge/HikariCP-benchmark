@@ -27,36 +27,38 @@ package com.zaxxer.hikari.benchmark;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
 
+import org.apache.tomcat.jdbc.pool.PoolProperties;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.GenerateMicroBenchmark;
+import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.logic.BlackHole;
+import org.openjdk.jmh.annotations.TearDown;
 
 import com.jolbox.bonecp.BoneCPConfig;
 import com.jolbox.bonecp.BoneCPDataSource;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
-@BenchmarkMode(Mode.AverageTime)
-@OutputTimeUnit(TimeUnit.NANOSECONDS)
+@BenchmarkMode(Mode.Throughput)
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
-public class MyBenchmark
+public class StatementBench
 {
-    private DataSource hikariDS;
-    private DataSource boneDS;
+    private static DataSource hikariDS;
+    private static DataSource tomcatDS;
+    private static DataSource boneDS;
 
     @Setup
-    public void setupHikari()
+    public void setup()
     {
         HikariConfig config = new HikariConfig();
         config.setAcquireIncrement(5);
@@ -91,60 +93,108 @@ public class MyBenchmark
         bconfig.setPassword("nopass");
 
         boneDS = new BoneCPDataSource(bconfig);
+
+        PoolProperties p = new PoolProperties();
+        p.setUrl("jdbc:stub");
+        p.setDriverClassName("com.zaxxer.hikari.benchmark.StubDriver");
+        p.setUsername("sa");
+        p.setPassword("");
+        p.setInitialSize(10);
+        p.setMinIdle(10);
+        p.setMaxIdle(60);
+        p.setMaxActive(60);
+        p.setMaxWait(8000);
+        p.setMinEvictableIdleTimeMillis((int) TimeUnit.MINUTES.toMillis(30));
+        p.setTestOnBorrow(true);
+        p.setValidationQuery("VALUES 1");
+        p.setJdbcInterceptors("StatementFinalizer");
+
+        tomcatDS = new org.apache.tomcat.jdbc.pool.DataSource(p);
     }
 
     @GenerateMicroBenchmark
-    public void testHikari(BlackHole bh)
+    public PreparedStatement testHikari(HikariState state)
     {
-        bh.consume(test(bh, hikariDS));
+        return test(state.connection);
     }
 
     @GenerateMicroBenchmark
-    public void testBone(BlackHole bh)
+    public PreparedStatement testBone(BoneState state)
     {
-        bh.consume(test(bh, boneDS));
+        return test(state.connection);
     }
 
-    private long test(BlackHole bh, DataSource ds)
+    @GenerateMicroBenchmark
+    public PreparedStatement testTomcat(TomcatState state)
     {
-        long counter = 0;
+        return test(state.connection);
+    }
+
+    private PreparedStatement test(Connection connection)
+    {
         try
         {
-            Connection connection = ds.getConnection();
-            bh.consume(connection);
-
-            PreparedStatement statement = connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
-            bh.consume(statement);
-
-            for (int k = 0; k < 100; k++)
-            {
-                statement.setInt(1, k);
-                statement.addBatch();
-            }
-            bh.consume(statement.executeBatch());
-
-            counter += statement.unwrap(StubPreparedStatement.class).getCount();
-
-            statement = connection.prepareStatement("SELECT * FROM test WHERE foo=?");
-            bh.consume(statement);
-
-            ResultSet resultSet = statement.executeQuery();
-            bh.consume(resultSet);
-            for (int k = 0; k < 100; k++)
-            {
-                bh.consume(resultSet.next());
-                bh.consume(resultSet.getInt(k));
-            }
-
-            connection.close();
+            PreparedStatement prepareStatement = connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
+            prepareStatement.close();
+            return prepareStatement;
         }
         catch (SQLException e)
         {
             throw new RuntimeException(e);
         }
+    }
 
-        bh.consume(counter);
+    @State(Scope.Thread)
+    public static class HikariState
+    {
+        Connection connection;
 
-        return counter;
+        @Setup(Level.Iteration)
+        public void setup() throws SQLException
+        {
+            connection = hikariDS.getConnection();
+        }
+
+        @TearDown(Level.Iteration)
+        public void teardown() throws SQLException
+        {
+            connection.close();
+        }
+    }
+
+    @State(Scope.Thread)
+    public static class BoneState
+    {
+        Connection connection;
+
+        @Setup(Level.Iteration)
+        public void setup() throws SQLException
+        {
+            connection = boneDS.getConnection();
+        }
+
+        @TearDown(Level.Iteration)
+        public void teardown() throws SQLException
+        {
+            connection.close();
+        }
+    }
+
+    @State(Scope.Thread)
+    public static class TomcatState
+    {
+        Connection connection;
+
+        @Setup(Level.Iteration)
+        public void setup() throws SQLException
+        {
+            connection = tomcatDS.getConnection();
+        }
+
+        @TearDown(Level.Iteration)
+        public void teardown() throws SQLException
+        {
+            connection.close();
+        }
     }
 }
