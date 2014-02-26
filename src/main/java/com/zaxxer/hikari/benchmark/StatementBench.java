@@ -28,6 +28,7 @@ package com.zaxxer.hikari.benchmark;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
@@ -38,6 +39,7 @@ import org.openjdk.jmh.annotations.GenerateMicroBenchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -53,25 +55,83 @@ import com.zaxxer.hikari.HikariDataSource;
 @State(Scope.Thread)
 public class StatementBench
 {
-    private static DataSource hikariDS;
-    private static DataSource tomcatDS;
-    private static DataSource boneDS;
+    @Param({ "hikari", "bone", "tomcat" })
+    public String pool;
+
+    private static DataSource DS;
 
     @Setup
     public void setup()
     {
-        // Setup HikariCP
-        HikariConfig config = new HikariConfig();
-        config.setAcquireIncrement(5);
-        config.setConnectionTimeout(8000);
-        config.setIdleTimeout(TimeUnit.MINUTES.toMillis(30));
-        config.setJdbc4ConnectionTest(true);
-        config.setDataSourceClassName("com.zaxxer.hikari.benchmark.StubDataSource");
-        config.setUseInstrumentation(true);
+        switch (pool)
+        {
+        case "hikari":
+            setupHikari();
+            break;
+        case "bone":
+            setupBone();
+            break;
+        case "tomcat":
+            setupTomcat();
+            break;
+        }
 
-        hikariDS = new HikariDataSource(config);
+    }
 
-        // Setup BoneCP
+    @GenerateMicroBenchmark
+    public PreparedStatement testPreparedStatement(ConnectionState state)
+    {
+        try
+        {
+            PreparedStatement prepareStatement = state.connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
+            prepareStatement.close();
+            return prepareStatement;
+        }
+        catch (SQLException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @GenerateMicroBenchmark
+    public boolean testStatement(ConnectionState state)
+    {
+        try
+        {
+            Statement statement = state.connection.createStatement();
+            boolean bool = statement.execute("INSERT INTO test (column) VALUES (?)");
+            bool |= statement.getMoreResults();
+            statement.close();
+            return bool;
+        }
+        catch (SQLException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void setupTomcat()
+    {
+        PoolProperties p = new PoolProperties();
+        p.setUrl("jdbc:stub");
+        p.setDriverClassName("com.zaxxer.hikari.benchmark.StubDriver");
+        p.setUsername("sa");
+        p.setPassword("");
+        p.setInitialSize(10);
+        p.setMinIdle(10);
+        p.setMaxIdle(60);
+        p.setMaxActive(60);
+        p.setMaxWait(8000);
+        p.setMinEvictableIdleTimeMillis((int) TimeUnit.MINUTES.toMillis(30));
+        p.setTestOnBorrow(true);
+        p.setValidationQuery("VALUES 1");
+        // p.setJdbcInterceptors("StatementFinalizer");
+
+        DS = new org.apache.tomcat.jdbc.pool.DataSource(p);
+    }
+
+    private void setupBone()
+    {
         try
         {
             Class.forName("com.zaxxer.hikari.benchmark.StubDriver");
@@ -94,104 +154,31 @@ public class StatementBench
         bconfig.setUsername("nobody");
         bconfig.setPassword("nopass");
 
-        boneDS = new BoneCPDataSource(bconfig);
-
-        // Setup Tomcat-JDBC
-        PoolProperties p = new PoolProperties();
-        p.setUrl("jdbc:stub");
-        p.setDriverClassName("com.zaxxer.hikari.benchmark.StubDriver");
-        p.setUsername("sa");
-        p.setPassword("");
-        p.setInitialSize(10);
-        p.setMinIdle(10);
-        p.setMaxIdle(60);
-        p.setMaxActive(60);
-        p.setMaxWait(8000);
-        p.setMinEvictableIdleTimeMillis((int) TimeUnit.MINUTES.toMillis(30));
-        p.setTestOnBorrow(true);
-        p.setValidationQuery("VALUES 1");
-        p.setJdbcInterceptors("StatementFinalizer");
-
-        tomcatDS = new org.apache.tomcat.jdbc.pool.DataSource(p);
+        DS = new BoneCPDataSource(bconfig);
     }
 
-    @GenerateMicroBenchmark
-    public PreparedStatement testHikari(HikariState state)
+    private void setupHikari()
     {
-        return test(state.connection);
-    }
+        HikariConfig config = new HikariConfig();
+        config.setAcquireIncrement(5);
+        config.setConnectionTimeout(8000);
+        config.setIdleTimeout(TimeUnit.MINUTES.toMillis(30));
+        config.setJdbc4ConnectionTest(true);
+        config.setDataSourceClassName("com.zaxxer.hikari.benchmark.StubDataSource");
+        config.setUseInstrumentation(true);
 
-    @GenerateMicroBenchmark
-    public PreparedStatement testBone(BoneState state)
-    {
-        return test(state.connection);
-    }
-
-    // @GenerateMicroBenchmark
-    public PreparedStatement testTomcat(TomcatState state)
-    {
-        return test(state.connection);
-    }
-
-    private PreparedStatement test(Connection connection)
-    {
-        try
-        {
-            PreparedStatement prepareStatement = connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
-            prepareStatement.close();
-            return prepareStatement;
-        }
-        catch (SQLException e)
-        {
-            throw new RuntimeException(e);
-        }
+        DS = new HikariDataSource(config);
     }
 
     @State(Scope.Thread)
-    public static class HikariState
+    public static class ConnectionState
     {
         Connection connection;
 
         @Setup(Level.Iteration)
         public void setup() throws SQLException
         {
-            connection = hikariDS.getConnection();
-        }
-
-        @TearDown(Level.Iteration)
-        public void teardown() throws SQLException
-        {
-            connection.close();
-        }
-    }
-
-    @State(Scope.Thread)
-    public static class BoneState
-    {
-        Connection connection;
-
-        @Setup(Level.Iteration)
-        public void setup() throws SQLException
-        {
-            connection = boneDS.getConnection();
-        }
-
-        @TearDown(Level.Iteration)
-        public void teardown() throws SQLException
-        {
-            connection.close();
-        }
-    }
-
-    @State(Scope.Thread)
-    public static class TomcatState
-    {
-        Connection connection;
-
-        @Setup(Level.Iteration)
-        public void setup() throws SQLException
-        {
-            connection = tomcatDS.getConnection();
+            connection = DS.getConnection();
         }
 
         @TearDown(Level.Iteration)
