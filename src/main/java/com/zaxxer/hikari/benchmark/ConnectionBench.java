@@ -111,21 +111,21 @@ public class ConnectionBench
     }
 
     @GenerateMicroBenchmark
-    public void testHikari(BlackHole bh)
+    public Connection testHikari(BlackHole bh)
     {
-        bh.consume(test(bh, hikariDS));
+        return test(bh, hikariDS);
     }
 
     @GenerateMicroBenchmark
-    public void testBone(BlackHole bh)
+    public Connection testBone(BlackHole bh)
     {
-        bh.consume(test(bh, boneDS));
+        return test(bh, boneDS);
     }
 
     @GenerateMicroBenchmark
-    public void testTomcat(BlackHole bh)
+    public Connection testTomcat(BlackHole bh)
     {
-        bh.consume(test(bh, tomcatDS));
+        return test(bh, tomcatDS);
     }
 
     private Connection test(BlackHole bh, DataSource ds)
