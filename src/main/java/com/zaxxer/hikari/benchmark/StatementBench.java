@@ -38,15 +38,16 @@ import org.openjdk.jmh.annotations.TearDown;
 
 import com.jolbox.bonecp.BoneCPConfig;
 import com.jolbox.bonecp.BoneCPDataSource;
+import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@State(Scope.Thread)
+@State(Scope.Benchmark)
 public class StatementBench
 {
-    @Param({ "hikari", "bone", "tomcat" })
+    @Param({ "hikari", "bone", "tomcat", "c3p0" })
     public String pool;
 
     private static DataSource DS;
@@ -65,40 +66,28 @@ public class StatementBench
         case "tomcat":
             setupTomcat();
             break;
-        }
-
-    }
-
-    @GenerateMicroBenchmark
-    public PreparedStatement testPreparedStatement(ConnectionState state)
-    {
-        try
-        {
-            PreparedStatement prepareStatement = state.connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
-            prepareStatement.close();
-            return prepareStatement;
-        }
-        catch (SQLException e)
-        {
-            throw new RuntimeException(e);
+        case "c3p0":
+            setupC3P0();
+            break;
         }
     }
 
     @GenerateMicroBenchmark
-    public boolean testStatement(ConnectionState state)
+    public PreparedStatement testPreparedStatement(ConnectionState state) throws SQLException
     {
-        try
-        {
-            Statement statement = state.connection.createStatement();
-            boolean bool = statement.execute("INSERT INTO test (column) VALUES (?)");
-            bool |= statement.getMoreResults();
-            statement.close();
-            return bool;
-        }
-        catch (SQLException e)
-        {
-            throw new RuntimeException(e);
-        }
+        PreparedStatement prepareStatement = state.connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
+        prepareStatement.close();
+        return prepareStatement;
+    }
+
+    @GenerateMicroBenchmark
+    public boolean testStatement(ConnectionState state) throws SQLException
+    {
+        Statement statement = state.connection.createStatement();
+        boolean bool = statement.execute("INSERT INTO test (column) VALUES (?)");
+        bool |= statement.getMoreResults();
+        statement.close();
+        return bool;
     }
 
     private void setupTomcat()
@@ -151,14 +140,37 @@ public class StatementBench
     private void setupHikari()
     {
         HikariConfig config = new HikariConfig();
-        config.setAcquireIncrement(5);
+        config.setMinimumPoolSize(10);
+        config.setMaximumPoolSize(60);
         config.setConnectionTimeout(8000);
         config.setIdleTimeout(TimeUnit.MINUTES.toMillis(30));
         config.setJdbc4ConnectionTest(true);
         config.setDataSourceClassName("com.zaxxer.hikari.benchmark.StubDataSource");
-        config.setUseInstrumentation(true);
 
         DS = new HikariDataSource(config);
+    }
+
+    private void setupC3P0()
+    {
+        try
+        {
+            ComboPooledDataSource cpds = new ComboPooledDataSource();
+            cpds.setDriverClass( "com.zaxxer.hikari.benchmark.StubDriver" );            
+            cpds.setJdbcUrl( "jdbc:stub" );
+            cpds.setInitialPoolSize(10);
+            cpds.setMinPoolSize(10);
+            cpds.setMaxPoolSize(60);
+            cpds.setCheckoutTimeout(8000);
+            cpds.setLoginTimeout(8);
+            cpds.setTestConnectionOnCheckout(true);
+            cpds.setPreferredTestQuery("VALUES 1");
+    
+            DS = cpds;
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     @State(Scope.Thread)

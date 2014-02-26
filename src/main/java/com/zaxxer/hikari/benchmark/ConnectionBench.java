@@ -34,15 +34,16 @@ import org.openjdk.jmh.annotations.State;
 
 import com.jolbox.bonecp.BoneCPConfig;
 import com.jolbox.bonecp.BoneCPDataSource;
+import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@State(Scope.Thread)
+@State(Scope.Benchmark)
 public class ConnectionBench
 {
-    @Param({ "hikari", "bone", "tomcat" })
+    @Param({ "hikari", "bone", "tomcat", "c3p0" })
     public String pool;
 
     private DataSource DS;
@@ -61,8 +62,10 @@ public class ConnectionBench
         case "tomcat":
             setupTomcat();
             break;
+        case "c3p0":
+            setupC3P0();
+            break;
         }
-
     }
 
     @GenerateMicroBenchmark
@@ -135,8 +138,30 @@ public class ConnectionBench
         config.setIdleTimeout(TimeUnit.MINUTES.toMillis(30));
         config.setJdbc4ConnectionTest(true);
         config.setDataSourceClassName("com.zaxxer.hikari.benchmark.StubDataSource");
-        config.setUseInstrumentation(true);
 
         DS = new HikariDataSource(config);
+    }
+
+    private void setupC3P0()
+    {
+        try
+        {
+            ComboPooledDataSource cpds = new ComboPooledDataSource();
+            cpds.setDriverClass( "com.zaxxer.hikari.benchmark.StubDriver" );            
+            cpds.setJdbcUrl( "jdbc:stub" );
+            cpds.setInitialPoolSize(10);
+            cpds.setMinPoolSize(10);
+            cpds.setMaxPoolSize(60);
+            cpds.setCheckoutTimeout(8000);
+            cpds.setLoginTimeout(8);
+            cpds.setTestConnectionOnCheckout(true);
+            cpds.setPreferredTestQuery("VALUES 1");
+    
+            DS = cpds;
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 }
