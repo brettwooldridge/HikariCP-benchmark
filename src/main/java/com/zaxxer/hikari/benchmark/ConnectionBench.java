@@ -36,10 +36,10 @@ import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.GenerateMicroBenchmark;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.logic.BlackHole;
 
 import com.jolbox.bonecp.BoneCPConfig;
 import com.jolbox.bonecp.BoneCPDataSource;
@@ -51,23 +51,66 @@ import com.zaxxer.hikari.HikariDataSource;
 @State(Scope.Thread)
 public class ConnectionBench
 {
-    private DataSource hikariDS;
-    private DataSource tomcatDS;
-    private DataSource boneDS;
+    @Param({ "hikari", "bone", "tomcat" })
+    public String pool;
+
+    private DataSource DS;
 
     @Setup
     public void setup()
     {
-        HikariConfig config = new HikariConfig();
-        config.setAcquireIncrement(5);
-        config.setConnectionTimeout(8000);
-        config.setIdleTimeout(TimeUnit.MINUTES.toMillis(30));
-        config.setJdbc4ConnectionTest(true);
-        config.setDataSourceClassName("com.zaxxer.hikari.benchmark.StubDataSource");
-        config.setUseInstrumentation(true);
+        switch (pool)
+        {
+        case "hikari":
+            setupHikari();
+            break;
+        case "bone":
+            setupBone();
+            break;
+        case "tomcat":
+            setupTomcat();
+            break;
+        }
 
-        hikariDS = new HikariDataSource(config);
+    }
 
+    @GenerateMicroBenchmark
+    public Connection testConnection()
+    {
+        try
+        {
+            Connection connection = DS.getConnection();
+            connection.close();
+            return connection;
+        }
+        catch (SQLException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void setupTomcat()
+    {
+        PoolProperties p = new PoolProperties();
+        p.setUrl("jdbc:stub");
+        p.setDriverClassName("com.zaxxer.hikari.benchmark.StubDriver");
+        p.setUsername("sa");
+        p.setPassword("");
+        p.setInitialSize(10);
+        p.setMinIdle(10);
+        p.setMaxIdle(60);
+        p.setMaxActive(60);
+        p.setMaxWait(8000);
+        p.setMinEvictableIdleTimeMillis((int) TimeUnit.MINUTES.toMillis(30));
+        p.setTestOnBorrow(true);
+        p.setValidationQuery("VALUES 1");
+        // p.setJdbcInterceptors("StatementFinalizer");
+
+        DS = new org.apache.tomcat.jdbc.pool.DataSource(p);
+    }
+
+    private void setupBone()
+    {
         try
         {
             Class.forName("com.zaxxer.hikari.benchmark.StubDriver");
@@ -90,58 +133,19 @@ public class ConnectionBench
         bconfig.setUsername("nobody");
         bconfig.setPassword("nopass");
 
-        boneDS = new BoneCPDataSource(bconfig);
-
-        PoolProperties p = new PoolProperties();
-        p.setUrl("jdbc:stub");
-        p.setDriverClassName("com.zaxxer.hikari.benchmark.StubDriver");
-        p.setUsername("sa");
-        p.setPassword("");
-        p.setInitialSize(10);
-        p.setMinIdle(10);
-        p.setMaxIdle(60);
-        p.setMaxActive(60);
-        p.setMaxWait(8000);
-        p.setMinEvictableIdleTimeMillis((int) TimeUnit.MINUTES.toMillis(30)); 
-        p.setTestOnBorrow(true);
-        p.setValidationQuery("VALUES 1");
-        p.setJdbcInterceptors("StatementFinalizer");
-
-        tomcatDS = new org.apache.tomcat.jdbc.pool.DataSource(p);
+        DS = new BoneCPDataSource(bconfig);
     }
 
-    @GenerateMicroBenchmark
-    public Connection testHikari(BlackHole bh)
+    private void setupHikari()
     {
-        return test(bh, hikariDS);
-    }
+        HikariConfig config = new HikariConfig();
+        config.setAcquireIncrement(5);
+        config.setConnectionTimeout(8000);
+        config.setIdleTimeout(TimeUnit.MINUTES.toMillis(30));
+        config.setJdbc4ConnectionTest(true);
+        config.setDataSourceClassName("com.zaxxer.hikari.benchmark.StubDataSource");
+        config.setUseInstrumentation(true);
 
-    @GenerateMicroBenchmark
-    public Connection testBone(BlackHole bh)
-    {
-        return test(bh, boneDS);
-    }
-
-    @GenerateMicroBenchmark
-    public Connection testTomcat(BlackHole bh)
-    {
-        return test(bh, tomcatDS);
-    }
-
-    private Connection test(BlackHole bh, DataSource ds)
-    {
-        try
-        {
-            Connection connection = ds.getConnection();
-            bh.consume(connection);
-
-            connection.close();
-
-            return connection;
-        }
-        catch (SQLException e)
-        {
-            throw new RuntimeException(e);
-        }
+        DS = new HikariDataSource(config);
     }
 }
