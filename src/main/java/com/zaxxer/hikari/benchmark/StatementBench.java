@@ -102,6 +102,8 @@ public class StatementBench
         p.setMaxIdle(60);
         p.setMaxActive(60);
         p.setMaxWait(8000);
+        p.setDefaultAutoCommit(false);
+        p.setRollbackOnReturn(true);
         p.setMinEvictableIdleTimeMillis((int) TimeUnit.MINUTES.toMillis(30));
         p.setTestOnBorrow(true);
         p.setValidationQuery("VALUES 1");
@@ -130,6 +132,8 @@ public class StatementBench
         bconfig.setConnectionTestStatement("VALUES 1");
         bconfig.setCloseOpenStatements(true);
         bconfig.setDisableConnectionTracking(true);
+        bconfig.setDefaultAutoCommit(false);
+        bconfig.setResetConnectionOnClose(true);
         bconfig.setJdbcUrl("jdbc:stub");
         bconfig.setUsername("nobody");
         bconfig.setPassword("nopass");
@@ -140,11 +144,11 @@ public class StatementBench
     private void setupHikari()
     {
         HikariConfig config = new HikariConfig();
-        config.setMinimumPoolSize(10);
-        config.setMaximumPoolSize(60);
+        config.setAcquireIncrement(5);
         config.setConnectionTimeout(8000);
         config.setIdleTimeout(TimeUnit.MINUTES.toMillis(30));
         config.setJdbc4ConnectionTest(true);
+        config.setAutoCommit(false);
         config.setDataSourceClassName("com.zaxxer.hikari.benchmark.StubDataSource");
 
         DS = new HikariDataSource(config);

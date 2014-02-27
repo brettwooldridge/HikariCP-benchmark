@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Brett Wooldridge
+ * Copyright (C) 2013 Brett Wooldridge
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.zaxxer.hikari.benchmark;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
@@ -25,12 +26,14 @@ import javax.sql.DataSource;
 import org.apache.tomcat.jdbc.pool.PoolProperties;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.GenerateMicroBenchmark;
+import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
 
 import com.jolbox.bonecp.BoneCPConfig;
 import com.jolbox.bonecp.BoneCPDataSource;
@@ -41,12 +44,12 @@ import com.zaxxer.hikari.HikariDataSource;
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
-public class ConnectionBench
+public class StatementBench2
 {
     @Param({ "hikari", "bone", "tomcat", "c3p0" })
     public String pool;
 
-    private DataSource DS;
+    private static DataSource DS;
 
     @Setup
     public void setup()
@@ -69,18 +72,18 @@ public class ConnectionBench
     }
 
     @GenerateMicroBenchmark
-    public Connection testConnection()
+    public Statement testPrepareStatement(ConnectionState state) throws SQLException
     {
-        try
-        {
-            Connection connection = DS.getConnection();
-            connection.close();
-            return connection;
-        }
-        catch (SQLException e)
-        {
-            throw new RuntimeException(e);
-        }
+        state.statement = state.connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
+        return state.statement;
+    }
+
+    @GenerateMicroBenchmark
+    public Statement testAbandonStatement(ConnectionState2 state) throws SQLException
+    {
+        Statement statement = state.statement;
+        state.connection.close();
+        return statement;
     }
 
     private void setupTomcat()
@@ -100,7 +103,7 @@ public class ConnectionBench
         p.setMinEvictableIdleTimeMillis((int) TimeUnit.MINUTES.toMillis(30));
         p.setTestOnBorrow(true);
         p.setValidationQuery("VALUES 1");
-        // p.setJdbcInterceptors("StatementFinalizer");
+        p.setJdbcInterceptors("StatementFinalizer");
 
         DS = new org.apache.tomcat.jdbc.pool.DataSource(p);
     }
@@ -124,9 +127,8 @@ public class ConnectionBench
         bconfig.setIdleMaxAgeInMinutes(30);
         bconfig.setConnectionTestStatement("VALUES 1");
         bconfig.setCloseOpenStatements(true);
-        bconfig.setDisableConnectionTracking(true);
+        bconfig.setDisableConnectionTracking(false);
         bconfig.setDefaultAutoCommit(false);
-        bconfig.setResetConnectionOnClose(true);
         bconfig.setJdbcUrl("jdbc:stub");
         bconfig.setUsername("nobody");
         bconfig.setPassword("nopass");
@@ -167,6 +169,40 @@ public class ConnectionBench
         catch (Exception e)
         {
             throw new RuntimeException(e);
+        }
+    }
+
+    @State(Scope.Thread)
+    public static class ConnectionState
+    {
+        Connection connection;
+        Statement statement;
+
+        @Setup(Level.Invocation)
+        public void setup() throws SQLException
+        {
+            connection = DS.getConnection();
+        }
+
+        @TearDown(Level.Invocation)
+        public void teardown() throws SQLException
+        {
+            statement.close();
+            connection.close();
+        }
+    }
+
+    @State(Scope.Thread)
+    public static class ConnectionState2
+    {
+        Connection connection;
+        Statement statement;
+
+        @Setup(Level.Invocation)
+        public void setup() throws SQLException
+        {
+            connection = DS.getConnection();
+            statement = connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
         }
     }
 }
