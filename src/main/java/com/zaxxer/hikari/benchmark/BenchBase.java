@@ -100,7 +100,7 @@ public class BenchBase
         props.setTestOnBorrow(true);
         props.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
         props.setValidationQuery("VALUES 1");
-        props.setJdbcInterceptors("org.apache.tomcat.jdbc.pool.interceptor.StatementFinalizer");
+        props.setJdbcInterceptors("ConnectionState;StatementFinalizer;");
 
         DS = new org.apache.tomcat.jdbc.pool.DataSource(props);
     }
