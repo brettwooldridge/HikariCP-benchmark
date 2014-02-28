@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.zaxxer.hikari.benchmark;
+package com.zaxxer.hikari.benchmark.stubs;
 
 import java.sql.Connection;
 import java.sql.Driver;

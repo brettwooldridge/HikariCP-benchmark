@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.zaxxer.hikari.benchmark;
+package com.zaxxer.hikari.benchmark.stubs;
 
 import java.io.PrintWriter;
 import java.sql.Connection;
