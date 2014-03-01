@@ -36,21 +36,21 @@ import org.openjdk.jmh.annotations.TearDown;
 public class ConnectionBench extends BenchBase
 {
     @GenerateMicroBenchmark
-    public Connection testGetConnection(ConnectionState state) throws SQLException
+    public Connection getConnection(ConnectionState state) throws SQLException
     {
         state.connection = DS.getConnection();
         return state.connection;
     }
 
     @GenerateMicroBenchmark
-    public boolean testCloseConnection(ConnectionState2 state) throws SQLException
+    public boolean closeConnection(ConnectionState2 state) throws SQLException
     {
         state.connection.close();
         return state.connection.isClosed();
     }
 
     @GenerateMicroBenchmark
-    public Connection testConnectionCycle() throws SQLException
+    public Connection cycleCnnection() throws SQLException
     {
         Connection connection = DS.getConnection();
         connection.close();
