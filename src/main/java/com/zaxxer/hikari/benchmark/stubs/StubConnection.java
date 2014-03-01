@@ -44,6 +44,7 @@ public class StubConnection implements Connection
     private static long foo;
     private boolean autoCommit;
     private boolean isClosed;
+    private int isolation;
 
     static
     {
@@ -107,7 +108,7 @@ public class StubConnection implements Connection
     /** {@inheritDoc} */
     public void rollback() throws SQLException
     {
-
+        autoCommit = false;
     }
 
     /** {@inheritDoc} */
@@ -153,12 +154,13 @@ public class StubConnection implements Connection
     /** {@inheritDoc} */
     public void setTransactionIsolation(int level) throws SQLException
     {
+        this.isolation = level;
     }
 
     /** {@inheritDoc} */
     public int getTransactionIsolation() throws SQLException
     {
-        return 0;
+        return isolation;
     }
 
     /** {@inheritDoc} */
@@ -170,6 +172,7 @@ public class StubConnection implements Connection
     /** {@inheritDoc} */
     public void clearWarnings() throws SQLException
     {
+        autoCommit = false;
     }
 
     /** {@inheritDoc} */
