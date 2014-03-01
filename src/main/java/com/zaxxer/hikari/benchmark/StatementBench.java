@@ -22,7 +22,6 @@ import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
 
 import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.CompilerControl;
 import org.openjdk.jmh.annotations.GenerateMicroBenchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Mode;
@@ -38,24 +37,23 @@ import org.openjdk.jmh.annotations.TearDown;
 public class StatementBench extends BenchBase
 {
     @GenerateMicroBenchmark
-    public boolean testStatementCycle(ConnectionState state) throws SQLException
+    public boolean cycleStatement(ConnectionState state) throws SQLException
     {
         Statement statement = state.connection.createStatement();
         boolean bool = statement.execute("INSERT INTO test (column) VALUES (?)");
-        bool |= statement.getMoreResults();
         statement.close();
         return bool;
     }
 
     @GenerateMicroBenchmark
-    public Statement testPrepareStatement(ConnectionState2 state) throws SQLException
+    public Statement prepareStatement(ConnectionState2 state) throws SQLException
     {
         state.statement = state.connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
         return state.statement;
     }
 
     @GenerateMicroBenchmark
-    public Statement testCloseStatement(ConnectionState3 state) throws SQLException
+    public Statement closeStatement(ConnectionState3 state) throws SQLException
     {
         Statement statement = state.statement;
         statement.close();
@@ -63,7 +61,7 @@ public class StatementBench extends BenchBase
     }
 
     @GenerateMicroBenchmark
-    public Statement testAbandonStatement(ConnectionState3 state) throws SQLException
+    public Statement abandonStatement(ConnectionState4 state) throws SQLException
     {
         Statement statement = state.statement;
         state.connection.close();
@@ -124,10 +122,21 @@ public class StatementBench extends BenchBase
         @TearDown(Level.Invocation)
         public void teardown() throws SQLException
         {
-            if (!connection.isClosed())
-            {
-                connection.close();
-            }
+            connection.close();
+        }
+    }
+
+    @State(Scope.Thread)
+    public static class ConnectionState4
+    {
+        Connection connection;
+        Statement statement;
+
+        @Setup(Level.Invocation)
+        public void setup() throws SQLException
+        {
+            connection = DS.getConnection();
+            statement = connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
         }
     }
 }
