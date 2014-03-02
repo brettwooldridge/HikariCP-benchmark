@@ -37,7 +37,7 @@ import org.openjdk.jmh.annotations.TearDown;
 public class StatementBench extends BenchBase
 {
     @GenerateMicroBenchmark
-    public boolean cycleStatement(ConnectionState state) throws SQLException
+    public boolean cycleStatement(CycleState state) throws SQLException
     {
         Statement statement = state.connection.createStatement();
         boolean bool = statement.execute("INSERT INTO test (column) VALUES (?)");
@@ -46,14 +46,14 @@ public class StatementBench extends BenchBase
     }
 
     @GenerateMicroBenchmark
-    public Statement prepareStatement(ConnectionState2 state) throws SQLException
+    public Statement prepareStatement(PrepareState state) throws SQLException
     {
         state.statement = state.connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
         return state.statement;
     }
 
     @GenerateMicroBenchmark
-    public Statement closeStatement(ConnectionState3 state) throws SQLException
+    public Statement closeStatement(CloseState state) throws SQLException
     {
         Statement statement = state.statement;
         statement.close();
@@ -61,15 +61,14 @@ public class StatementBench extends BenchBase
     }
 
     @GenerateMicroBenchmark
-    public Statement abandonStatement(ConnectionState4 state) throws SQLException
+    public Statement[] abandonStatement(AbandonState state) throws SQLException
     {
-        Statement statement = state.statement;
         state.connection.close();
-        return statement;
+        return state.statement;
     }
 
     @State(Scope.Thread)
-    public static class ConnectionState
+    public static class CycleState
     {
         Connection connection;
 
@@ -87,7 +86,7 @@ public class StatementBench extends BenchBase
     }
 
     @State(Scope.Thread)
-    public static class ConnectionState2
+    public static class PrepareState
     {
         Connection connection;
         Statement statement;
@@ -107,7 +106,7 @@ public class StatementBench extends BenchBase
     }
 
     @State(Scope.Thread)
-    public static class ConnectionState3
+    public static class CloseState
     {
         Connection connection;
         Statement statement;
@@ -127,16 +126,20 @@ public class StatementBench extends BenchBase
     }
 
     @State(Scope.Thread)
-    public static class ConnectionState4
+    public static class AbandonState
     {
         Connection connection;
-        Statement statement;
+        Statement[] statement = new Statement[5];
 
         @Setup(Level.Invocation)
         public void setup() throws SQLException
         {
             connection = DS.getConnection();
-            statement = connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
+            statement[0] = connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
+            statement[1] = connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
+            statement[2] = connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
+            statement[3] = connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
+            statement[4] = connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
         }
     }
 }
