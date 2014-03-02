@@ -1,39 +1,40 @@
-#### Benchmark results as of 2014/02/26
-
-##### Core i7
-```
-Benchmark                                      (pool)   Mode   Samples         Mean   Mean error    Units
-c.z.h.b.StatementBench.testPreparedStatement     c3p0  thrpt        50    10030.327       78.519   ops/ms
-c.z.h.b.StatementBench.testPreparedStatement     bone  thrpt        50    19247.212      400.775   ops/ms
-c.z.h.b.StatementBench.testPreparedStatement   tomcat  thrpt        50   130633.151     3780.265   ops/ms
-c.z.h.b.StatementBench.testPreparedStatement   hikari  thrpt        50   138602.485    10989.573   ops/ms
-
-Benchmark                                      (pool)   Mode   Samples         Mean   Mean error    Units
-c.z.h.b.StatementBench.testStatement             c3p0  thrpt        50    10986.444      166.185   ops/ms
-c.z.h.b.StatementBench.testStatement             bone  thrpt        50    19924.987      236.259   ops/ms
-c.z.h.b.StatementBench.testStatement           tomcat  thrpt        50   147461.538     3464.517   ops/ms
-c.z.h.b.StatementBench.testStatement           hikari  thrpt        50   156471.167    12674.897   ops/ms
-
-Benchmark                                      (pool)   Mode   Samples         Mean   Mean error    Units
-c.z.h.b.ConnectionBench.testConnection           c3p0  thrpt        50      378.237        2.213   ops/ms
-c.z.h.b.ConnectionBench.testConnection         tomcat  thrpt        50     2038.786        8.925   ops/ms
-c.z.h.b.ConnectionBench.testConnection           bone  thrpt        50     2571.159       45.731   ops/ms
-c.z.h.b.ConnectionBench.testConnection         hikari  thrpt        50     5695.939      194.770   ops/ms
-```
+#### Benchmark results as of 2014/03/02 - HikariCP 1.3.1-SNAPSHOT
 
 ##### Core i5
 ```
-Benchmark                                      (pool)   Mode   Samples         Mean   Mean error    Units
-c.z.h.b.ConnectionBench.testConnection           bone  thrpt       100     2023.072       16.928   ops/ms
-c.z.h.b.ConnectionBench.testConnection           c3p0  thrpt       100      270.428        3.062   ops/ms
-c.z.h.b.ConnectionBench.testConnection         hikari  thrpt       100     6864.158      142.339   ops/ms
-c.z.h.b.ConnectionBench.testConnection         tomcat  thrpt       100     1593.279       31.570   ops/ms
-c.z.h.b.StatementBench.testPreparedStatement     bone  thrpt       100     9265.518      112.143   ops/ms
-c.z.h.b.StatementBench.testPreparedStatement     c3p0  thrpt       100     4312.603       38.862   ops/ms
-c.z.h.b.StatementBench.testPreparedStatement   hikari  thrpt       100    81525.157     1353.693   ops/ms
-c.z.h.b.StatementBench.testPreparedStatement   tomcat  thrpt       100    52746.594     2194.556   ops/ms
-c.z.h.b.StatementBench.testStatement             bone  thrpt       100     9035.818       93.496   ops/ms
-c.z.h.b.StatementBench.testStatement             c3p0  thrpt       100     4702.436       64.690   ops/ms
-c.z.h.b.StatementBench.testStatement           hikari  thrpt       100    83577.974     1725.596   ops/ms
-c.z.h.b.StatementBench.testStatement           tomcat  thrpt       100    54129.247      647.426   ops/ms
+Benchmark                                 (pool)   Mode   Samples         Mean   Mean error    Units
+c.z.h.b.ConnectionBench.cycleCnnection      c3p0  thrpt       100       79.581        0.528   ops/ms
+c.z.h.b.ConnectionBench.cycleCnnection    tomcat  thrpt       100     1291.787       18.857   ops/ms
+c.z.h.b.ConnectionBench.cycleCnnection      bone  thrpt       100     1993.719       19.132   ops/ms
+c.z.h.b.ConnectionBench.cycleCnnection    hikari  thrpt       100     6878.487      133.641   ops/ms
+
+c.z.h.b.ConnectionBench.closeConnection     c3p0  thrpt       100      222.691        2.390   ops/ms
+c.z.h.b.ConnectionBench.closeConnection   tomcat  thrpt       100     1982.904       30.690   ops/ms
+c.z.h.b.ConnectionBench.closeConnection     bone  thrpt       100     2518.267      210.510   ops/ms
+c.z.h.b.ConnectionBench.closeConnection   hikari  thrpt       100    11499.908      260.961   ops/ms
+
+c.z.h.b.ConnectionBench.getConnection       c3p0  thrpt       100      116.720        0.945   ops/ms
+c.z.h.b.ConnectionBench.getConnection     tomcat  thrpt       100     2767.765       84.827   ops/ms
+c.z.h.b.ConnectionBench.getConnection     hikari  thrpt       100    10690.672      297.902   ops/ms
+c.z.h.b.ConnectionBench.getConnection       bone  thrpt       100    12396.906     1596.514   ops/ms
+
+c.z.h.b.StatementBench.cycleSatement        c3p0  thrpt       100     6391.655      107.164   ops/ms
+c.z.h.b.StatementBench.cycleSatement        bone  thrpt       100    11291.918      106.988   ops/ms
+c.z.h.b.StatementBench.cycleSatement      tomcat  thrpt       100    16712.380      115.013   ops/ms
+c.z.h.b.StatementBench.cycleSatement      hikari  thrpt       100    42392.460     1363.968   ops/ms
+
+c.z.h.b.StatementBench.abandonStatement     c3p0  thrpt       100      205.439        2.453   ops/ms
+c.z.h.b.StatementBench.abandonStatement     bone  thrpt       100     1810.269       80.821   ops/ms
+c.z.h.b.StatementBench.abandonStatement   tomcat  thrpt       100     1966.199       30.170   ops/ms
+c.z.h.b.StatementBench.abandonStatement   hikari  thrpt       100    11658.869      264.743   ops/ms
+
+c.z.h.b.StatementBench.closeStatement       c3p0  thrpt       100    13599.157      287.791   ops/ms
+c.z.h.b.StatementBench.closeStatement       bone  thrpt       100    51632.826     1095.151   ops/ms
+c.z.h.b.StatementBench.closeStatement     hikari  thrpt       100    57358.759     2615.237   ops/ms
+c.z.h.b.StatementBench.closeStatement     tomcat  thrpt       100   105256.978      617.305   ops/ms
+
+c.z.h.b.StatementBench.prepareStatement     c3p0  thrpt       100     8879.437       91.770   ops/ms
+c.z.h.b.StatementBench.prepareStatement     bone  thrpt       100    12310.751      141.998   ops/ms
+c.z.h.b.StatementBench.prepareStatement   tomcat  thrpt       100    15820.841      163.833   ops/ms
+c.z.h.b.StatementBench.prepareStatement   hikari  thrpt       100    49107.673     1825.294   ops/ms
 ```
