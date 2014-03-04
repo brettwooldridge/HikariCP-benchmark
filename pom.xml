@@ -60,6 +60,11 @@ questions.
         	<artifactId>c3p0</artifactId>
         	<version>0.9.5-pre6</version>
         </dependency>
+        <dependency>
+        	<groupId>org.vibur</groupId>
+        	<artifactId>vibur-dbcp</artifactId>
+        	<version>1.0.0</version>
+        </dependency>
     </dependencies>
 
     <properties>

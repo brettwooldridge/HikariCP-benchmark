@@ -27,6 +27,7 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
+import org.vibur.dbcp.ViburDBCPDataSource;
 
 import com.jolbox.bonecp.BoneCPConfig;
 import com.jolbox.bonecp.BoneCPDataSource;
@@ -37,7 +38,7 @@ import com.zaxxer.hikari.HikariDataSource;
 @State(Scope.Benchmark)
 public class BenchBase
 {
-    @Param({ "hikari", "bone", "tomcat", "c3p0" })
+    @Param({ "hikari", "bone", "tomcat", "c3p0", "vibur" })
     public String pool;
 
     public static volatile DataSource DS;
@@ -45,6 +46,15 @@ public class BenchBase
     @Setup
     public void setup()
     {
+        try
+        {
+            Class.forName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
+        }
+        catch (ClassNotFoundException e)
+        {
+            throw new RuntimeException(e);
+        }
+
         switch (pool)
         {
         case "hikari":
@@ -58,6 +68,9 @@ public class BenchBase
             break;
         case "c3p0":
             setupC3P0();
+            break;
+        case "vibur":
+            setupVibur();
             break;
         }
     }
@@ -79,6 +92,8 @@ public class BenchBase
         case "c3p0":
             ((ComboPooledDataSource) DS).close();
             break;
+        case "vibur":
+            ((ViburDBCPDataSource) DS).terminate();
         }
     }
 
@@ -107,15 +122,6 @@ public class BenchBase
 
     protected void setupBone()
     {
-        try
-        {
-            Class.forName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
-        }
-        catch (ClassNotFoundException e)
-        {
-            throw new RuntimeException(e);
-        }
-
         BoneCPConfig config = new BoneCPConfig();
         config.setAcquireIncrement(5);
         config.setMinConnectionsPerPartition(10);
@@ -171,5 +177,21 @@ public class BenchBase
         {
             throw new RuntimeException(e);
         }
+    }
+
+    private void setupVibur()
+    {
+        ViburDBCPDataSource vibur = new ViburDBCPDataSource();
+        vibur.setJdbcUrl( "jdbc:stub" );
+        vibur.setPoolInitialSize(10);
+        vibur.setTestConnectionQuery("VALUES 1");
+        vibur.setDefaultAutoCommit(false);
+        vibur.setResetDefaultsAfterUse(true);
+        vibur.setPoolMaxSize(60);
+        vibur.setConnectionIdleLimitInSeconds(1);
+        vibur.setDefaultTransactionIsolation("TRANSACTION_READ_COMMITTED");
+        vibur.start();
+
+        DS = vibur;
     }
 }
