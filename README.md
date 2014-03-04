@@ -9,4 +9,37 @@ The Oracle JVM performance team, primarily Aleksey Shipilёv, developed a microb
  * Run ``mvn clean package``
  * Run the ``./benchmark.sh`` script
 
-The ``benchmark.sh`` script is a wrapper around JMH execution.  A full run of the benchmark will take over two hours.  There are two options provided by the script: ``quick`` and ``medium``.  *quick* will take about 20 minutes to run, *medium* will take about an hour.  It is extrememly boring to watch, and you can't do anything else on the PC where the benchmark is running without affecting the results, so have dinner, run some errands, etc.
+<sub>Note you will need to build the latest ``dev`` branch of Hikari-CP using the ``mvn install`` command before running the benchmarks.</sub>
+
+The ``benchmark.sh`` script is a wrapper around JMH execution.  A full run of the benchmark will take over two hours.
+
+There are several more options you can provide to the ``benchmark.sh``.  There are a lot actually, but these are most useful...
+
+**Specify Shorter Runs**<br/>
+There are two options provided by the script: ``quick`` and ``medium``.  *quick* will take about 20 minutes to run, *medium* will take about an hour.  It is extrememly boring to watch, and you can't do anything else on the PC where the benchmark is running without affecting the results, so have dinner, run some errands, etc.
+```
+./benchmark.sh quick
+```
+If specified with other options, ``quick`` or ``medium`` must be the first option.
+
+-----------------------------------------------------------
+
+**Specify Specific Pools**<br/>
+```
+./benchmark.sh -p pool=hikari,bone
+```
+Where ``pool`` is a comma-separated list (*hikari*, *bone*, *tomcat*, *c3p0*, *vibur*).
+
+-----------------------------------------------------------
+
+There are two benchmarks in the suite currently: *ConnectionBench* and *StatementBench*.  By default both benchmarks are run, but if you want to run one or the other you can use a JMH option using a regex (regular experession) to do so.  For example, to only run the *ConnectionBench* use:
+```
+./benchmark.sh ".*Connection.*"
+```
+
+-----------------------------------------------------------
+
+All of the options can be combined:
+```
+./benchmark.sh medium -p pool=hikari,bone ".*Statement.*"
+```
