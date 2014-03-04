@@ -31,7 +31,7 @@ If specified with other options, ``quick`` or ``medium`` must be the first optio
 Where ``pool`` is a comma-separated list (*hikari*, *bone*, *tomcat*, *c3p0*, *vibur*).
 
 -----------------------------------------------------------
-
+**Specify which Benchmark**<br/>
 There are two benchmarks in the suite currently: *ConnectionBench* and *StatementBench*.  By default both benchmarks are run, but if you want to run one or the other you can use a JMH option using a regex (regular experession) to do so.  For example, to only run the *ConnectionBench* use:
 ```
 ./benchmark.sh ".*Connection.*"
