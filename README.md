@@ -48,7 +48,7 @@ All of the options can be combined:
 
 As of: 2014/03/06
 
-*ConnectionCycle* measures cycles of ``DataSource.getConnection()/Connection.close()``. *StatementCycle* measures cycles of ``Connection.prepareStatement()/Statement.close()``. Other benchmarks are "component" benchmarks.  Cycle-times will be no faster than its slowest component, and are lower than a simple calculation would suggest due to increased lock-contention.
+*ConnectionCycle* measures cycles of ``DataSource.getConnection()/Connection.close()``. *StatementCycle* measures cycles of ``Connection.prepareStatement()/Statement.close()``. Other benchmarks are "component" benchmarks.  Cycle-times will be no faster than its slowest component (± measurement error), and are typically lower than a simple calculation would suggest due to increased lock-contention.  Benchmarks are run with 8 threads by default.
 
 [Click here to view unscaled version](https://github.com/brettwooldridge/HikariCP-benchmark/blob/master/README.md)
 
