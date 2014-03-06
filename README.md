@@ -43,3 +43,11 @@ All of the options can be combined:
 ```
 ./benchmark.sh medium -p pool=hikari,bone ".*Statement.*"
 ```
+-----------------------------------------------------------
+#### Current Results (2014/03/06)
+
+*ConnectionCycle* measures cycles of ``DataSource.getConnection()/Connection.close()``. *StatementCycle* measures cycles of ``Connection.prepareStatement()/Statement.close()``. Other benchmarks are "component" benchmarks.  Cycle-times are lower than a simple halving of the combined components due to increased lock-contention.
+
+[Click here to view unscaled version](https://github.com/brettwooldridge/HikariCP-benchmark/README.md)
+
+![](https://github.com/brettwooldridge/HikariCP-benchmark/wiki/benchmark-charts.png)
