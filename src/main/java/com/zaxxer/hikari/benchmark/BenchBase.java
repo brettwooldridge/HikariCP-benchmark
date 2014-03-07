@@ -38,8 +38,13 @@ import com.zaxxer.hikari.HikariDataSource;
 @State(Scope.Benchmark)
 public class BenchBase
 {
+    private static final int MIN_POOL_SIZE = 0;
+
     @Param({ "hikari", "bone", "tomcat", "c3p0", "vibur" })
     public String pool;
+
+    @Param({ "10" })
+    public int maxPoolSize;
 
     public static volatile DataSource DS;
 
@@ -104,10 +109,10 @@ public class BenchBase
         props.setDriverClassName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
         props.setUsername("sa");
         props.setPassword("");
-        props.setInitialSize(10);
-        props.setMinIdle(10);
-        props.setMaxIdle(60);
-        props.setMaxActive(60);
+        props.setInitialSize(MIN_POOL_SIZE);
+        props.setMinIdle(MIN_POOL_SIZE);
+        props.setMaxIdle(maxPoolSize);
+        props.setMaxActive(maxPoolSize);
         props.setMaxWait(8000);
         props.setDefaultAutoCommit(false);
         props.setRollbackOnReturn(true);
@@ -123,9 +128,9 @@ public class BenchBase
     protected void setupBone()
     {
         BoneCPConfig config = new BoneCPConfig();
-        config.setAcquireIncrement(5);
-        config.setMinConnectionsPerPartition(10);
-        config.setMaxConnectionsPerPartition(60);
+        config.setAcquireIncrement(1);
+        config.setMinConnectionsPerPartition(MIN_POOL_SIZE);
+        config.setMaxConnectionsPerPartition(maxPoolSize);
         config.setConnectionTimeoutInMs(8000);
         config.setIdleMaxAgeInMinutes(30);
         config.setConnectionTestStatement("VALUES 1");
@@ -145,7 +150,9 @@ public class BenchBase
     protected void setupHikari()
     {
         HikariConfig config = new HikariConfig();
-        config.setAcquireIncrement(5);
+        config.setAcquireIncrement(1);
+        config.setMinimumPoolSize(MIN_POOL_SIZE);
+        config.setMaximumPoolSize(maxPoolSize);
         config.setConnectionTimeout(8000);
         config.setIdleTimeout(TimeUnit.MINUTES.toMillis(30));
         config.setJdbc4ConnectionTest(true);
@@ -163,9 +170,10 @@ public class BenchBase
             ComboPooledDataSource cpds = new ComboPooledDataSource();
             cpds.setDriverClass( "com.zaxxer.hikari.benchmark.stubs.StubDriver" );            
             cpds.setJdbcUrl( "jdbc:stub" );
-            cpds.setInitialPoolSize(10);
-            cpds.setMinPoolSize(10);
-            cpds.setMaxPoolSize(60);
+            cpds.setAcquireIncrement(1);
+            cpds.setInitialPoolSize(MIN_POOL_SIZE);
+            cpds.setMinPoolSize(MIN_POOL_SIZE);
+            cpds.setMaxPoolSize(maxPoolSize);
             cpds.setCheckoutTimeout(8000);
             cpds.setLoginTimeout(8);
             cpds.setTestConnectionOnCheckout(true);
@@ -183,11 +191,11 @@ public class BenchBase
     {
         ViburDBCPDataSource vibur = new ViburDBCPDataSource();
         vibur.setJdbcUrl( "jdbc:stub" );
-        vibur.setPoolInitialSize(10);
+        vibur.setPoolInitialSize(MIN_POOL_SIZE);
+        vibur.setPoolMaxSize(maxPoolSize);
         vibur.setTestConnectionQuery("VALUES 1");
         vibur.setDefaultAutoCommit(false);
         vibur.setResetDefaultsAfterUse(true);
-        vibur.setPoolMaxSize(60);
         vibur.setConnectionIdleLimitInSeconds(1);
         vibur.setDefaultTransactionIsolation("TRANSACTION_READ_COMMITTED");
         vibur.start();
