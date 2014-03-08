@@ -21,7 +21,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.tomcat.jdbc.pool.PoolProperties;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.GenerateMicroBenchmark;
 import org.openjdk.jmh.annotations.Level;
@@ -45,28 +44,6 @@ public class StatementBench extends BenchBase
         state.consume(statement.execute("INSERT INTO test (column) VALUES (?)"));
         statement.close();
         return statement;
-    }
-
-    protected void setupTomcat()
-    {
-        PoolProperties props = new PoolProperties();
-        props.setUrl("jdbc:stub");
-        props.setDriverClassName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
-        props.setUsername("sa");
-        props.setPassword("");
-        props.setInitialSize(MIN_POOL_SIZE);
-        props.setMinIdle(MIN_POOL_SIZE);
-        props.setMaxIdle(maxPoolSize);
-        props.setMaxActive(maxPoolSize);
-        props.setMaxWait(8000);
-        props.setDefaultAutoCommit(false);
-        props.setRollbackOnReturn(true);
-        props.setMinEvictableIdleTimeMillis((int) TimeUnit.MINUTES.toMillis(30));
-        props.setTestOnBorrow(true);
-        props.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-        props.setValidationQuery("VALUES 1");
-
-        DS = new org.apache.tomcat.jdbc.pool.DataSource(props);
     }
 
     @State(Scope.Thread)
