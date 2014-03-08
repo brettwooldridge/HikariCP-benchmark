@@ -22,13 +22,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.GenerateMicroBenchmark;
-import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
 
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -36,48 +33,10 @@ import org.openjdk.jmh.annotations.TearDown;
 public class ConnectionBench extends BenchBase
 {
     @GenerateMicroBenchmark
-    public Connection getConnection(ConnectionState state) throws SQLException
-    {
-        state.connection = DS.getConnection();
-        return state.connection;
-    }
-
-    @GenerateMicroBenchmark
-    public boolean closeConnection(ConnectionState2 state) throws SQLException
-    {
-        state.connection.close();
-        return state.connection.isClosed();
-    }
-
-    @GenerateMicroBenchmark
     public Connection cycleCnnection() throws SQLException
     {
         Connection connection = DS.getConnection();
         connection.close();
         return connection;
-    }
-    
-    @State(Scope.Thread)
-    public static class ConnectionState
-    {
-        Connection connection;
-
-        @TearDown(Level.Invocation)
-        public void teardown() throws SQLException
-        {
-            connection.close();
-        }
-    }
-
-    @State(Scope.Thread)
-    public static class ConnectionState2
-    {
-        Connection connection;
-
-        @Setup(Level.Invocation)
-        public void setup() throws SQLException
-        {
-            connection = DS.getConnection();
-        }
     }
 }

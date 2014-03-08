@@ -38,12 +38,12 @@ import com.zaxxer.hikari.HikariDataSource;
 @State(Scope.Benchmark)
 public class BenchBase
 {
-    private static final int MIN_POOL_SIZE = 0;
+    protected static final int MIN_POOL_SIZE = 0;
 
     @Param({ "hikari", "bone", "tomcat", "c3p0", "vibur" })
     public String pool;
 
-    @Param({ "10" })
+    @Param({ "32" })
     public int maxPoolSize;
 
     public static volatile DataSource DS;
@@ -143,6 +143,7 @@ public class BenchBase
         config.setJdbcUrl("jdbc:stub");
         config.setUsername("nobody");
         config.setPassword("nopass");
+        config.setPoolStrategy("CACHED");
 
         DS = new BoneCPDataSource(config);
     }

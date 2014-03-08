@@ -21,6 +21,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.tomcat.jdbc.pool.PoolProperties;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.GenerateMicroBenchmark;
 import org.openjdk.jmh.annotations.Level;
@@ -30,6 +31,7 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.logic.BlackHole;
 
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -37,109 +39,51 @@ import org.openjdk.jmh.annotations.TearDown;
 public class StatementBench extends BenchBase
 {
     @GenerateMicroBenchmark
-    public boolean cycleStatement(CycleState state) throws SQLException
+    public Statement cycleStatement(ConnectionState state) throws SQLException
     {
         Statement statement = state.connection.createStatement();
-        boolean bool = statement.execute("INSERT INTO test (column) VALUES (?)");
-        statement.close();
-        return bool;
-    }
-
-    @GenerateMicroBenchmark
-    public Statement prepareStatement(PrepareState state) throws SQLException
-    {
-        state.statement = state.connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
-        return state.statement;
-    }
-
-    @GenerateMicroBenchmark
-    public Statement closeStatement(CloseState state) throws SQLException
-    {
-        Statement statement = state.statement;
+        state.consume(statement.execute("INSERT INTO test (column) VALUES (?)"));
         statement.close();
         return statement;
     }
 
-    @GenerateMicroBenchmark
-    public Statement[] abandonStatement(AbandonState state) throws SQLException
+    protected void setupTomcat()
     {
-        state.connection.close();
-        return state.statement;
+        PoolProperties props = new PoolProperties();
+        props.setUrl("jdbc:stub");
+        props.setDriverClassName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
+        props.setUsername("sa");
+        props.setPassword("");
+        props.setInitialSize(MIN_POOL_SIZE);
+        props.setMinIdle(MIN_POOL_SIZE);
+        props.setMaxIdle(maxPoolSize);
+        props.setMaxActive(maxPoolSize);
+        props.setMaxWait(8000);
+        props.setDefaultAutoCommit(false);
+        props.setRollbackOnReturn(true);
+        props.setMinEvictableIdleTimeMillis((int) TimeUnit.MINUTES.toMillis(30));
+        props.setTestOnBorrow(true);
+        props.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+        props.setValidationQuery("VALUES 1");
+
+        DS = new org.apache.tomcat.jdbc.pool.DataSource(props);
     }
 
     @State(Scope.Thread)
-    public static class CycleState
+    public static class ConnectionState extends BlackHole
     {
         Connection connection;
 
-        @Setup(Level.Invocation)
+        @Setup(Level.Iteration)
         public void setup() throws SQLException
         {
             connection = DS.getConnection();
         }
 
-        @TearDown(Level.Invocation)
+        @TearDown(Level.Iteration)
         public void teardown() throws SQLException
         {
             connection.close();
-        }
-    }
-
-    @State(Scope.Thread)
-    public static class PrepareState
-    {
-        Connection connection;
-        Statement statement;
-
-        @Setup(Level.Invocation)
-        public void setup() throws SQLException
-        {
-            connection = DS.getConnection();
-        }
-
-        @TearDown(Level.Invocation)
-        public void teardown() throws SQLException
-        {
-            statement.close();
-            connection.close();
-        }
-    }
-
-    @State(Scope.Thread)
-    public static class CloseState
-    {
-        Connection connection;
-        Statement statement;
-
-        @Setup(Level.Invocation)
-        public void setup() throws SQLException
-        {
-            connection = DS.getConnection();
-            statement = connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
-        }
-
-        @TearDown(Level.Invocation)
-        public void teardown() throws SQLException
-        {
-            connection.close();
-        }
-    }
-
-    @State(Scope.Thread)
-    public static class AbandonState
-    {
-        Connection connection;
-        Statement[] statement = new Statement[5];
-
-        @Setup(Level.Invocation)
-        public void setup() throws SQLException
-        {
-            connection = DS.getConnection();
-            statement[0] = connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
-            statement[1] = connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
-            statement[2] = connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
-            statement[3] = connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
-            statement[4] = connection.prepareStatement("INSERT INTO test (column) VALUES (?)");
         }
     }
 }
