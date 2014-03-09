@@ -138,7 +138,7 @@ public class BenchBase
         config.setDisableConnectionTracking(true);
         config.setDefaultAutoCommit(false);
         config.setResetConnectionOnClose(true);
-        config.setDefaultTransactionIsolation("TRANSACTION_READ_COMMITTED");
+        config.setDefaultTransactionIsolation("READ_COMMITTED");
         config.setDisableJMX(true);
         config.setJdbcUrl("jdbc:stub");
         config.setUsername("nobody");
@@ -198,7 +198,7 @@ public class BenchBase
         vibur.setDefaultAutoCommit(false);
         vibur.setResetDefaultsAfterUse(true);
         vibur.setConnectionIdleLimitInSeconds(1);
-        vibur.setDefaultTransactionIsolation("TRANSACTION_READ_COMMITTED");
+        vibur.setDefaultTransactionIsolation("READ_COMMITTED");
         vibur.start();
 
         DS = vibur;
