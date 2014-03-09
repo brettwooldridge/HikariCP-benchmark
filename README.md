@@ -36,21 +36,25 @@ Where ``pool`` is a comma-separated list (*hikari*, *bone*, *tomcat*, *c3p0*, *v
 ```
 ./benchmark.sh -p maxPoolSize=4
 ```
-Pool size is only applicable for the *Connection Cycle* test, attempting to run the *Statement Cycle* test with a pool smaller than the number of threads (8) will result in testing failures.  The *Connection Cycle* test runs with 8 threads, so to test a contrained pool condition set *maxPoolSize* to 4.  See comments about threading below.
+Pool size is only applicable for the *Connection Cycle* test, attempting to run the *Statement Cycle* test with a pool smaller than the number of threads (8) will result in testing failures.  The *Connection Cycle* test runs with 8 threads, so to test a contrained pool condition set *maxPoolSize* to a smaller number (eg. 4).  See comments about threading below.
 
 -----------------------------------------------------------
 **Specify which Benchmark**<br/>
 There are two benchmarks in the suite currently: *ConnectionBench* and *StatementBench*.  By default both benchmarks are run, but if you want to run one or the other you can use a JMH option using a regex (regular experession) to do so.  For example, to only run the *ConnectionBench* use:
 ```
-./benchmark.sh ".*Connection.*"
+./benchmark.sh ".*Statement.*"
 ```
 
 -----------------------------------------------------------
 
 All of the options can be combined:
 ```
-./benchmark.sh medium -p pool=hikari,bone ".*Statement.*"
+./benchmark.sh medium -p pool=hikari,bone -p maxPoolSize=4 ".*Connection.*"
 ```
+-----------------------------------------------------------
+#### Threading
+With microbenchmarks, it is typically not valid to test with more threads than cores, i.e. the results are not considered reliable.  An Intel Core i7 with 4-physcial cores and 4 HyperThread cores can be run with a thread count of 8 reliably.  The further above that number you test, the wider the margin of error.
+
 -----------------------------------------------------------
 #### Current Results
 
@@ -61,7 +65,4 @@ As of: 2014/03/08
 [Click here to view unscaled version](https://github.com/brettwooldridge/HikariCP-benchmark/blob/master/README.md)
 
 ![](http://github.com/brettwooldridge/HikariCP/wiki/Benchmarks.png)
-
-#### Threading
-With microbenchmarks, it is typically not valid to test with more threads than cores, i.e. the results are not considered reliable.  An Intel Core i7 with 4-physcial cores and 4 HyperThread cores can be run with a thread count of 8 reliably.  The further above that number you test, the wider the margin of error.
 
