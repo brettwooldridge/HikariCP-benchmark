@@ -6,9 +6,9 @@
 
 #### JMH Connection Pool Microbenchmarks
 
-This set of microbenchmaks was developed to refine the HikariCP JDBC connection pool implementation, but it actually runs the same benchmarks across multiple pools.
+This set of microbenchmaks was developed to refine the [HikariCP](https://github.com/brettwooldridge/HikariCP) JDBC connection pool implementation, but it actually runs the same benchmarks across multiple pools.
 
-Initially HikariCP used a set of "homegrown" benchmarks.  But we came to understand that benchmarking on the JVM, which employs Dead Code Elimination (DCE), lock-coalescing, inlining, loop-unrolling, on-stack replacement (OSR) and a myriad of other tricks, renders most attempts at benchmarking inaccurate at best and invalid at worst.  Read all the things that [people get wrong](https://groups.google.com/forum/#!msg/mechanical-sympathy/m4opvy4xq3U/7lY8x8SvHgwJ) about benchmarking on the JVM.
+Initially [HikariCP](https://github.com/brettwooldridge/HikariCP) used a set of "homegrown" benchmarks.  But we came to understand that benchmarking on the JVM, which employs Dead Code Elimination (DCE), lock-coalescing, inlining, loop-unrolling, on-stack replacement (OSR) and a myriad of other tricks, renders most attempts at benchmarking inaccurate at best and invalid at worst.  Read all the things that [people get wrong](https://groups.google.com/forum/#!msg/mechanical-sympathy/m4opvy4xq3U/7lY8x8SvHgwJ) about benchmarking on the JVM.
 
 The Oracle JVM performance team, primarily Aleksey Shipilёv, developed a microbenchmarking framework called JMH. It provides the infrastructure (if used properly) for accurate comparative measurement of JVM-based execution.  If you are interested in microbenchmarking at all, or just curious about all the wonderful things the JVM does, I highly recommend reading [this slideshare](http://www.slideshare.net/ConstantineNosovsky/nosovsky-java-microbenchmarking).
 
