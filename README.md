@@ -40,7 +40,7 @@ Pool size is only applicable for the *Connection Cycle* test, attempting to run 
 
 -----------------------------------------------------------
 **Specify which Benchmark**<br/>
-There are two benchmarks in the suite currently: *ConnectionBench* and *StatementBench*.  By default both benchmarks are run, but if you want to run one or the other you can use a JMH option using a regex (regular experession) to do so.  For example, to only run the *ConnectionBench* use:
+There are two benchmarks in the suite currently: *ConnectionBench* and *StatementBench*.  By default both benchmarks are run, but if you want to run one or the other you can use a JMH option using a regex (regular experession) to do so.  For example, to only run the *StatementBench* use:
 ```
 ./benchmark.sh ".*Statement.*"
 ```
