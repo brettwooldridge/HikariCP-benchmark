@@ -13,9 +13,10 @@ Initially HikariCP used a set of "homegrown" benchmarks.  But we came to underst
 The Oracle JVM performance team, primarily Aleksey Shipilёv, developed a microbenchmarking framework called JMH. It provides the infrastructure (if used properly) for accurate comparative measurement of JVM-based execution.  If you are interested in microbenchmarking at all, or just curious about all the wonderful things the JVM does, I highly recommend reading [this slideshare](http://www.slideshare.net/ConstantineNosovsky/nosovsky-java-microbenchmarking).
 
 #### How to run?
- * Clone this project
- * Run ``mvn clean package``
- * Run the ``./benchmark.sh`` script
+ * ``git clone https://github.com/brettwooldridge/HikariCP-benchmark.git``
+ * ``cd HikariCP-benchmark``
+ * ``mvn clean package``
+ * ``./benchmark.sh``
 
 The ``benchmark.sh`` script is a wrapper around JMH execution.  A full run of the benchmark will take about 45 minutes for all pools.
 
