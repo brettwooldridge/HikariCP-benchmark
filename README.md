@@ -11,12 +11,12 @@ The Oracle JVM performance team, primarily Aleksey Shipilёv, developed a microb
  * Run ``mvn clean package``
  * Run the ``./benchmark.sh`` script
 
-The ``benchmark.sh`` script is a wrapper around JMH execution.  A full run of the benchmark will take over two hours.
+The ``benchmark.sh`` script is a wrapper around JMH execution.  A full run of the benchmark will take about 45 minutes for all pools.
 
 There are several more options you can provide to the ``benchmark.sh``.  There are a lot actually, but these are most useful...
 
 **Specify Shorter Runs**<br/>
-There are two options provided by the script: ``quick`` and ``medium``.  *quick* will take about 20 minutes to run, *medium* will take about an hour.  It is extrememly boring to watch, and you can't do anything else on the PC where the benchmark is running without affecting the results, so have dinner, run some errands, etc.
+There are two options provided by the script: ``quick`` and ``medium``.  *quick* will take about 5 minutes to run, *medium* will take about 20 minutes -- for all pools.  It is extrememly boring to watch, and you can't do anything else on the PC where the benchmark is running without affecting the results, so have dinner, run some errands, etc.
 ```
 ./benchmark.sh quick
 ```
@@ -28,7 +28,7 @@ If specified with other options, ``quick`` or ``medium`` must be the first optio
 ```
 ./benchmark.sh -p pool=hikari,bone
 ```
-Where ``pool`` is a comma-separated list (*hikari*, *bone*, *tomcat*, *c3p0*, *vibur*).
+Where ``pool`` is a comma-separated list (*hikari*, *bone*, *tomcat*, *c3p0*, *vibur*).  Specifying a specific pool or subset of pools will shorten run times.
 
 -----------------------------------------------------------
 
