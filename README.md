@@ -1,6 +1,8 @@
 #### JMH Connection Pool Microbenchmarks
 
-This set of microbenchmaks was developed to refine the HikariCP JDBC connection pool implementation, but it actually runs the same benchmarks across multiple pools. Initially HikariCP used a set of "homegrown" benchmarks.  But we came to understand that benchmarking on the JVM, which employs Dead Code Elimination (DCE), lock-coalescing, inlining, loop-unrolling, on-stack replacement (OSR) and a myriad of other tricks, renders most attempts at benchmarking inaccurate at best and invalid at worst.
+This set of microbenchmaks was developed to refine the HikariCP JDBC connection pool implementation, but it actually runs the same benchmarks across multiple pools.
+
+Initially HikariCP used a set of "homegrown" benchmarks.  But we came to understand that benchmarking on the JVM, which employs Dead Code Elimination (DCE), lock-coalescing, inlining, loop-unrolling, on-stack replacement (OSR) and a myriad of other tricks, renders most attempts at benchmarking inaccurate at best and invalid at worst.
 
 The Oracle JVM performance team, primarily Aleksey Shipilёv, developed a microbenchmarking framework called JMH. It provides the infrastructure (if used properly) for accurate comparative measurement of JVM-based execution.  If you are interested in microbenchmarking at all, or just curious about all the wonderful things the JVM does, I highly recommend reading [this slideshare](http://www.slideshare.net/ConstantineNosovsky/nosovsky-java-microbenchmarking).
 
@@ -8,8 +10,6 @@ The Oracle JVM performance team, primarily Aleksey Shipilёv, developed a microb
  * Clone this project
  * Run ``mvn clean package``
  * Run the ``./benchmark.sh`` script
-
-<sub>Note you will need to build the latest ``dev`` branch of Hikari-CP using the ``mvn install`` command before running the benchmarks.</sub>
 
 The ``benchmark.sh`` script is a wrapper around JMH execution.  A full run of the benchmark will take over two hours.
 
