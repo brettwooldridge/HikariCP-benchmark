@@ -1,3 +1,9 @@
+[Click here to view unscaled version](https://github.com/brettwooldridge/HikariCP-benchmark/blob/master/README.md)
+
+![](http://github.com/brettwooldridge/HikariCP/wiki/Benchmarks.png)
+
+*ConnectionCycle* measures cycles of ``DataSource.getConnection()/Connection.close()``. *StatementCycle* measures cycles of ``Connection.prepareStatement()``, ``Statement.execute()``, ``Statement.close()``.
+
 #### JMH Connection Pool Microbenchmarks
 
 This set of microbenchmaks was developed to refine the HikariCP JDBC connection pool implementation, but it actually runs the same benchmarks across multiple pools.
@@ -54,15 +60,4 @@ All of the options can be combined:
 -----------------------------------------------------------
 #### Threading
 With microbenchmarks, it is typically not valid to test with more threads than cores, i.e. the results are not considered reliable.  An Intel Core i7 with 4-physcial cores and 4 HyperThread cores can be run with a thread count of 8 reliably.  The further above that number you test, the wider the margin of error.
-
------------------------------------------------------------
-#### Current Results
-
-As of: 2014/03/08
-
-*ConnectionCycle* measures cycles of ``DataSource.getConnection()/Connection.close()``. *StatementCycle* measures cycles of ``Connection.prepareStatement()``, ``Statement.execute()``, ``Statement.close()``.
-
-[Click here to view unscaled version](https://github.com/brettwooldridge/HikariCP-benchmark/blob/master/README.md)
-
-![](http://github.com/brettwooldridge/HikariCP/wiki/Benchmarks.png)
 
