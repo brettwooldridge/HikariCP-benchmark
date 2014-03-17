@@ -129,7 +129,7 @@ public class StubStatement implements Statement
     /** {@inheritDoc} */
     public boolean execute(String sql) throws SQLException
     {
-        return false;
+        return sql.startsWith("I");
     }
 
     /** {@inheritDoc} */
