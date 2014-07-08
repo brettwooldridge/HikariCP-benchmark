@@ -151,8 +151,7 @@ public class BenchBase
     protected void setupHikari()
     {
         HikariConfig config = new HikariConfig();
-        config.setAcquireIncrement(1);
-        config.setMinimumPoolSize(MIN_POOL_SIZE);
+        config.setMinimumIdle(MIN_POOL_SIZE);
         config.setMaximumPoolSize(maxPoolSize);
         config.setConnectionTimeout(8000);
         config.setIdleTimeout(TimeUnit.MINUTES.toMillis(30));
