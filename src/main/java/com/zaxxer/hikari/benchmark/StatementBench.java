@@ -21,8 +21,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
 
+import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.GenerateMicroBenchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
@@ -30,14 +30,14 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
-import org.openjdk.jmh.logic.BlackHole;
+import org.openjdk.jmh.infra.Blackhole;
 
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
 public class StatementBench extends BenchBase
 {
-    @GenerateMicroBenchmark
+    @Benchmark
     public Statement cycleStatement(ConnectionState state) throws SQLException
     {
         Statement statement = state.connection.createStatement();
@@ -47,7 +47,7 @@ public class StatementBench extends BenchBase
     }
 
     @State(Scope.Thread)
-    public static class ConnectionState extends BlackHole
+    public static class ConnectionState extends Blackhole
     {
         Connection connection;
 
