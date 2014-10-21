@@ -1,7 +1,6 @@
 package com.zaxxer.hikari.benchmark;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
@@ -166,6 +165,7 @@ public class DbDownTest
             cpds.setCheckoutTimeout(5000);
             cpds.setLoginTimeout(8);
             cpds.setTestConnectionOnCheckout(true);
+            cpds.setIdleConnectionTestPeriod(30);
             cpds.setPreferredTestQuery("SELECT 1");
     
             return cpds;
