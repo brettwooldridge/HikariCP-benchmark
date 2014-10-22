@@ -1,6 +1,7 @@
 package com.zaxxer.hikari.benchmark;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Timer;
@@ -53,6 +54,7 @@ public class DbDownTest
         class MyTask extends TimerTask
         {
             private DataSource ds;
+            public ResultSet resultSet;
 
             MyTask(DataSource ds)
             {
@@ -65,28 +67,36 @@ public class DbDownTest
                 try (Connection c = ds.getConnection()) {
                     LOGGER.info(ds.getClass().getSimpleName() + " got a connection.");
                     try (Statement stmt = c.createStatement()) {
-                        stmt.executeQuery("SELECT 1");
+                        LOGGER.debug(ds.getClass().getSimpleName() + " Statement " + System.identityHashCode(stmt));
+                        stmt.setQueryTimeout(1);
+                        resultSet = stmt.executeQuery("SELECT id FROM test");
+                        if (resultSet.next()) {
+                            LOGGER.debug("Ran query got " + resultSet.getInt(1));
+                        }
+                        else {
+                            LOGGER.warn(ds.getClass().getSimpleName() + " Query executed, got no results.");
+                        }
                     }
                     catch (SQLException e) {
-                        LOGGER.warn("Exception executing statement against connection", e);
+                        LOGGER.error(ds.getClass().getSimpleName() + " Exception executing query, got a bad connection from the pool" + e.getMessage());
                     }
                 }
-                catch (Exception e)
+                catch (Throwable t)
                 {
-                    LOGGER.warn("Exception getting connection", e);
+                    LOGGER.error(ds.getClass().getSimpleName() + " Exception getting connection: " + t.getMessage());
                 }
             }
         }
 
-        new Timer(true).schedule(new MyTask(hikariDS), 1000, 2000);
-        new Timer(true).schedule(new MyTask(c3p0DS), 1000, 2000);
-        new Timer(true).schedule(new MyTask(viburDS), 1000, 2000);
-        new Timer(true).schedule(new MyTask(boneDS), 1000, 2000);
-        new Timer(true).schedule(new MyTask(tomcatDS), 1000, 2000);
+        new Timer(true).schedule(new MyTask(hikariDS), 5000, 2000);
+        new Timer(true).schedule(new MyTask(c3p0DS), 5000, 2000);
+        new Timer(true).schedule(new MyTask(viburDS), 5000, 2000);
+        new Timer(true).schedule(new MyTask(boneDS), 5000, 2000);
+        new Timer(true).schedule(new MyTask(tomcatDS), 5000, 2000);
 
         try
         {
-            Thread.sleep(TimeUnit.SECONDS.toMillis(60));
+            Thread.sleep(TimeUnit.SECONDS.toMillis(150));
         }
         catch (InterruptedException e)
         {
@@ -106,6 +116,7 @@ public class DbDownTest
         props.setTestOnBorrow(true);
         props.setInitialSize(MIN_POOL_SIZE);
         props.setMinIdle(MIN_POOL_SIZE);
+        props.setMaxIdle(maxPoolSize);
         props.setMaxActive(maxPoolSize);
         props.setValidationQuery("SELECT 1");
 
@@ -120,7 +131,7 @@ public class DbDownTest
         config.setPassword("");
         config.setConnectionTimeoutInMs(5000);
         config.setAcquireIncrement(1);
-        config.setAcquireRetryAttempts(0);
+        config.setAcquireRetryAttempts(3);
         config.setAcquireRetryDelayInMs(5000);
         config.setMinConnectionsPerPartition(MIN_POOL_SIZE);
         config.setMaxConnectionsPerPartition(maxPoolSize);
@@ -152,8 +163,11 @@ public class DbDownTest
             cpds.setJdbcUrl( "jdbc:mysql://192.168.0.114/test" );
             cpds.setUser("root");
             cpds.setCheckoutTimeout(5000);
-            cpds.setAcquireIncrement(1);
             cpds.setTestConnectionOnCheckout(true);
+            cpds.setAcquireIncrement(1);
+            cpds.setAcquireRetryAttempts(3);
+            cpds.setAcquireRetryDelay(5000);
+            cpds.setBreakAfterAcquireFailure(true);
             cpds.setInitialPoolSize(MIN_POOL_SIZE);
             cpds.setMinPoolSize(MIN_POOL_SIZE);
             cpds.setMaxPoolSize(maxPoolSize);
