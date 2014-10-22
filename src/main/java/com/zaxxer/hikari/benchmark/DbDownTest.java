@@ -1,6 +1,8 @@
 package com.zaxxer.hikari.benchmark;
 
 import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
@@ -62,6 +64,12 @@ public class DbDownTest
             {
                 try (Connection c = ds.getConnection()) {
                     LOGGER.info(ds.getClass().getSimpleName() + " got a connection.");
+                    try (Statement stmt = c.createStatement()) {
+                        stmt.executeQuery("SELECT 1");
+                    }
+                    catch (SQLException e) {
+                        LOGGER.warn("Exception executing statement against connection", e);
+                    }
                 }
                 catch (Exception e)
                 {
@@ -93,19 +101,13 @@ public class DbDownTest
         props.setDriverClassName("com.mysql.jdbc.Driver");
         props.setUsername("root");
         props.setPassword("");
+        props.setMaxWait(5000);
+        props.setValidationQueryTimeout(5);
+        props.setTestOnBorrow(true);
         props.setInitialSize(MIN_POOL_SIZE);
         props.setMinIdle(MIN_POOL_SIZE);
-        props.setMaxIdle(maxPoolSize);
         props.setMaxActive(maxPoolSize);
-        props.setMaxWait(5000);
-        props.setDefaultAutoCommit(false);
-        props.setRollbackOnReturn(true);
-        props.setMinEvictableIdleTimeMillis((int) TimeUnit.MINUTES.toMillis(30));
-        props.setTestOnBorrow(true);
-        props.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
         props.setValidationQuery("SELECT 1");
-        props.setValidationQueryTimeout(5);
-        props.setJdbcInterceptors("ConnectionState");
 
         return new org.apache.tomcat.jdbc.pool.DataSource(props);
     }
@@ -113,22 +115,16 @@ public class DbDownTest
     protected DataSource setupBone()
     {
         BoneCPConfig config = new BoneCPConfig();
-        config.setAcquireIncrement(1);
-        config.setMinConnectionsPerPartition(MIN_POOL_SIZE);
-        config.setMaxConnectionsPerPartition(maxPoolSize);
-        config.setConnectionTimeoutInMs(5000);
-        config.setIdleMaxAgeInMinutes(30);
-        config.setConnectionTestStatement("SELECT 1");
-        config.setCloseOpenStatements(true);
-        config.setDisableConnectionTracking(true);
-        config.setDefaultAutoCommit(false);
-        config.setResetConnectionOnClose(true);
-        config.setDefaultTransactionIsolation("READ_COMMITTED");
-        config.setDisableJMX(true);
         config.setJdbcUrl("jdbc:mysql://192.168.0.114/test");
         config.setUsername("root");
         config.setPassword("");
-        config.setPoolStrategy("CACHED");
+        config.setConnectionTimeoutInMs(5000);
+        config.setAcquireIncrement(1);
+        config.setAcquireRetryAttempts(0);
+        config.setAcquireRetryDelayInMs(5000);
+        config.setMinConnectionsPerPartition(MIN_POOL_SIZE);
+        config.setMaxConnectionsPerPartition(maxPoolSize);
+        config.setConnectionTestStatement("SELECT 1");
 
         return new BoneCPDataSource(config);
     }
@@ -136,17 +132,14 @@ public class DbDownTest
     protected DataSource setupHikari()
     {
         HikariConfig config = new HikariConfig();
-        config.setInitializationFailFast(true);
-        config.setMinimumIdle(MIN_POOL_SIZE);
-        config.setMaximumPoolSize(maxPoolSize);
-        config.setConnectionTimeout(5000);
-        config.setIdleTimeout(TimeUnit.MINUTES.toMillis(30));
-        config.setJdbc4ConnectionTest(true);
-        config.setAutoCommit(false);
-        config.setUsername("root");
-        config.setTransactionIsolation("TRANSACTION_READ_COMMITTED");
         config.setJdbcUrl("jdbc:mysql://192.168.0.114/test");
         config.setDriverClassName("com.mysql.jdbc.Driver");
+        config.setUsername("root");
+        config.setConnectionTimeout(5000);
+        config.setMinimumIdle(MIN_POOL_SIZE);
+        config.setMaximumPoolSize(maxPoolSize);
+        config.setInitializationFailFast(true);
+        config.setConnectionTestQuery("SELECT 1");
 
         return new HikariDataSource(config);
     }
@@ -158,14 +151,12 @@ public class DbDownTest
             ComboPooledDataSource cpds = new ComboPooledDataSource();
             cpds.setJdbcUrl( "jdbc:mysql://192.168.0.114/test" );
             cpds.setUser("root");
+            cpds.setCheckoutTimeout(5000);
             cpds.setAcquireIncrement(1);
+            cpds.setTestConnectionOnCheckout(true);
             cpds.setInitialPoolSize(MIN_POOL_SIZE);
             cpds.setMinPoolSize(MIN_POOL_SIZE);
             cpds.setMaxPoolSize(maxPoolSize);
-            cpds.setCheckoutTimeout(5000);
-            cpds.setLoginTimeout(8);
-            cpds.setTestConnectionOnCheckout(true);
-            cpds.setIdleConnectionTestPeriod(30);
             cpds.setPreferredTestQuery("SELECT 1");
     
             return cpds;
@@ -183,13 +174,12 @@ public class DbDownTest
         vibur.setUsername("root");
         vibur.setPassword("");
         vibur.setConnectionTimeoutInMs(5000);
+        vibur.setLoginTimeoutInSeconds(5);
+        vibur.setPoolEnableConnectionTracking(true);
+        vibur.setResetDefaultsAfterUse(true);
         vibur.setPoolInitialSize(MIN_POOL_SIZE);
         vibur.setPoolMaxSize(maxPoolSize);
         vibur.setTestConnectionQuery("SELECT 1");
-        vibur.setDefaultAutoCommit(false);
-        vibur.setResetDefaultsAfterUse(true);
-        vibur.setConnectionIdleLimitInSeconds(1);
-        vibur.setDefaultTransactionIsolation("READ_COMMITTED");
         vibur.start();
 
         return vibur;
