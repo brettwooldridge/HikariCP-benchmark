@@ -1,7 +1,6 @@
 package com.zaxxer.hikari.benchmark;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
@@ -71,11 +70,11 @@ public class DbDownTest
             }
         }
 
-        new Timer(true).schedule(new MyTask(hikariDS), 1000, 1500);
-        new Timer(true).schedule(new MyTask(c3p0DS), 1000, 1500);
-        new Timer(true).schedule(new MyTask(viburDS), 1000, 1500);
-        new Timer(true).schedule(new MyTask(boneDS), 1000, 1500);
-        new Timer(true).schedule(new MyTask(tomcatDS), 1000, 1500);
+        new Timer(true).schedule(new MyTask(hikariDS), 1000, 2000);
+        new Timer(true).schedule(new MyTask(c3p0DS), 1000, 2000);
+        new Timer(true).schedule(new MyTask(viburDS), 1000, 2000);
+        new Timer(true).schedule(new MyTask(boneDS), 1000, 2000);
+        new Timer(true).schedule(new MyTask(tomcatDS), 1000, 2000);
 
         try
         {
@@ -105,6 +104,7 @@ public class DbDownTest
         props.setTestOnBorrow(true);
         props.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
         props.setValidationQuery("SELECT 1");
+        props.setValidationQueryTimeout(5);
         props.setJdbcInterceptors("ConnectionState");
 
         return new org.apache.tomcat.jdbc.pool.DataSource(props);
@@ -145,8 +145,8 @@ public class DbDownTest
         config.setAutoCommit(false);
         config.setUsername("root");
         config.setTransactionIsolation("TRANSACTION_READ_COMMITTED");
-        // config.setDataSourceClassName("com.mysql.jdbc.jdbc2.optional.MysqlDataSource");
         config.setJdbcUrl("jdbc:mysql://192.168.0.114/test");
+        config.setDriverClassName("com.mysql.jdbc.Driver");
 
         return new HikariDataSource(config);
     }
@@ -156,7 +156,6 @@ public class DbDownTest
         try
         {
             ComboPooledDataSource cpds = new ComboPooledDataSource();
-            // cpds.setDriverClass( "com.zaxxer.hikari.benchmark.stubs.StubDriver" );            
             cpds.setJdbcUrl( "jdbc:mysql://192.168.0.114/test" );
             cpds.setUser("root");
             cpds.setAcquireIncrement(1);
