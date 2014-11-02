@@ -41,7 +41,7 @@ public class StatementBench extends BenchBase
     public Statement cycleStatement(ConnectionState state) throws SQLException
     {
         Statement statement = state.connection.createStatement();
-        state.consume(statement.execute("INSERT INTO test (column) VALUES (?)"));
+        state.consume(statement.execute("select 1"));
         statement.close();
         return statement;
     }
