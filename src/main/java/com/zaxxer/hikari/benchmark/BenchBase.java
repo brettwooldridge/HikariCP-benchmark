@@ -20,6 +20,8 @@ import java.sql.Connection;
 import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
+import java.sql.SQLException;
+
 
 import org.apache.tomcat.jdbc.pool.PoolProperties;
 import org.openjdk.jmh.annotations.Param;
@@ -34,26 +36,40 @@ import com.jolbox.bonecp.BoneCPDataSource;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.apache.commons.dbcp2.BasicDataSource;
+import org.apache.commons.pool2.PooledObjectFactory;
 
 @State(Scope.Benchmark)
 public class BenchBase
 {
     protected static final int MIN_POOL_SIZE = 0;
 
-    @Param({ "hikari", "bone", "tomcat", "c3p0", "vibur" })
+    @Param({ "hikari", "bone", "tomcat", "c3p0", "vibur", "dbcp" })
     public String pool;
 
-    @Param({ "32" })
+    @Param({ "1", "2", "4", "8", "16", "32" })
     public int maxPoolSize;
 
     public static volatile DataSource DS;
 
+//    private String jdbcUrl = "jdbc:stub";
+//    private String dbDriver = "com.zaxxer.hikari.benchmark.stubs.StubDriver";
+//
+    //private String jdbcUrl= "jdbc:mariadb://localhost/employees";
+    //private String dbDriver =  "org.mariadb.jdbc.Driver";
+
+
+    private String jdbcUrl= "jdbc:mysql://node2:3306/employees?useConfigs=maxPerformance&useServerPrepStmts=true&useLocalTransactionState=true";
+    private String dbDriver =  "com.mysql.jdbc.Driver";
+    private String user = "connj";
+    private String password = "test";
+
     @Setup
-    public void setup()
+    public void setup() throws SQLException
     {
         try
         {
-            Class.forName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
+            Class.forName(dbDriver);
         }
         catch (ClassNotFoundException e)
         {
@@ -71,17 +87,23 @@ public class BenchBase
         case "tomcat":
             setupTomcat();
             break;
+        case "c3p0-ht6":
+            setupC3P0ht6();
+            break;
         case "c3p0":
             setupC3P0();
             break;
         case "vibur":
             setupVibur();
             break;
+        case "dbcp":
+            setupDBCP();
+            break;
         }
     }
 
     @TearDown
-    public void teardown()
+    public void teardown() throws SQLException
     {
         switch (pool)
         {
@@ -97,30 +119,62 @@ public class BenchBase
         case "c3p0":
             ((ComboPooledDataSource) DS).close();
             break;
+        case "c3p0-ht6":
+            ((ComboPooledDataSource) DS).close();
+            break;
         case "vibur":
             ((ViburDBCPDataSource) DS).terminate();
+            break;
+        case "dbcp":
+            ((BasicDataSource) DS).close();
+            break;
         }
+    }
+
+    protected void setupDBCP() throws SQLException
+    {
+	BasicDataSource ds = new BasicDataSource();
+        ds.setDriverClassName(dbDriver);
+        ds.setUrl(jdbcUrl);
+        ds.setUsername(user);
+        ds.setPassword(password);
+        ds.setInitialSize(MIN_POOL_SIZE);
+        ds.setMinIdle(MIN_POOL_SIZE);
+        ds.setMaxIdle(maxPoolSize);
+        ds.setMaxTotal(maxPoolSize);
+        ds.setMaxWaitMillis(8000);
+        //props.setDefaultAutoCommit(false);
+        ds.setRollbackOnReturn(false);
+        ds.setEnableAutoCommitOnReturn(false);
+        ds.setMinEvictableIdleTimeMillis((int) TimeUnit.MINUTES.toMillis(30));
+        ds.setTestOnBorrow(false);
+        ds.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+        //props.setForceIgnoreUnresolvedTransactions(true);
+        //props.setValidationQuery("VALUES 1");
+        //props.setJdbcInterceptors("ConnectionState");
+
+        DS = ds;
     }
 
     protected void setupTomcat()
     {
         PoolProperties props = new PoolProperties();
-        props.setUrl("jdbc:stub");
-        props.setDriverClassName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
-        props.setUsername("sa");
-        props.setPassword("");
+        props.setUrl(jdbcUrl);
+        props.setDriverClassName(dbDriver);
+        props.setUsername(user);
+        props.setPassword(password);
         props.setInitialSize(MIN_POOL_SIZE);
         props.setMinIdle(MIN_POOL_SIZE);
         props.setMaxIdle(maxPoolSize);
         props.setMaxActive(maxPoolSize);
         props.setMaxWait(8000);
-        props.setDefaultAutoCommit(false);
-        props.setRollbackOnReturn(true);
+//        props.setDefaultAutoCommit(false);
+//        props.setRollbackOnReturn(true);
         props.setMinEvictableIdleTimeMillis((int) TimeUnit.MINUTES.toMillis(30));
-        props.setTestOnBorrow(true);
+//        props.setTestOnBorrow(true);
         props.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-        props.setValidationQuery("VALUES 1");
-        props.setJdbcInterceptors("ConnectionState");
+//        props.setValidationQuery("VALUES 1");
+//        props.setJdbcInterceptors("ConnectionState");
 
         DS = new org.apache.tomcat.jdbc.pool.DataSource(props);
     }
@@ -140,9 +194,9 @@ public class BenchBase
         config.setResetConnectionOnClose(true);
         config.setDefaultTransactionIsolation("READ_COMMITTED");
         config.setDisableJMX(true);
-        config.setJdbcUrl("jdbc:stub");
-        config.setUsername("nobody");
-        config.setPassword("nopass");
+        config.setJdbcUrl(jdbcUrl);
+        config.setUsername(user);
+        config.setPassword(password);
         config.setPoolStrategy("CACHED");
 
         DS = new BoneCPDataSource(config);
@@ -158,9 +212,40 @@ public class BenchBase
         config.setJdbc4ConnectionTest(true);
         config.setAutoCommit(false);
         config.setTransactionIsolation("TRANSACTION_READ_COMMITTED");
-        config.setDataSourceClassName("com.zaxxer.hikari.benchmark.stubs.StubDataSource");
+        config.setDriverClassName( dbDriver );            
+        config.setJdbcUrl(jdbcUrl);
+        config.setUsername(user);
+        config.setPassword(password);
+        //config.setDataSourceClassName("com.zaxxer.hikari.benchmark.stubs.StubDataSource");
 
         DS = new HikariDataSource(config);
+    }
+
+    protected void setupC3P0ht6()
+    {
+        try
+        {
+            ComboPooledDataSource cpds = new ComboPooledDataSource();
+            cpds.setDriverClass( dbDriver );            
+            cpds.setJdbcUrl( jdbcUrl );
+            cpds.setInitialPoolSize(MIN_POOL_SIZE);
+            cpds.setMinPoolSize(MIN_POOL_SIZE);
+            cpds.setMaxPoolSize(maxPoolSize);
+            cpds.setCheckoutTimeout(8000);
+            cpds.setLoginTimeout(8);
+            cpds.setForceIgnoreUnresolvedTransactions(true);
+            cpds.setNumHelperThreads(6);
+            //cpds.setTestConnectionOnCheckout(true);
+            //cpds.setPreferredTestQuery("VALUES 1");
+            cpds.setUser(user);
+            cpds.setPassword(password);
+   
+            DS = cpds;
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     protected void setupC3P0()
@@ -168,17 +253,19 @@ public class BenchBase
         try
         {
             ComboPooledDataSource cpds = new ComboPooledDataSource();
-            cpds.setDriverClass( "com.zaxxer.hikari.benchmark.stubs.StubDriver" );            
-            cpds.setJdbcUrl( "jdbc:stub" );
-            cpds.setAcquireIncrement(1);
+            cpds.setDriverClass( dbDriver );            
+            cpds.setJdbcUrl( jdbcUrl );
             cpds.setInitialPoolSize(MIN_POOL_SIZE);
             cpds.setMinPoolSize(MIN_POOL_SIZE);
             cpds.setMaxPoolSize(maxPoolSize);
             cpds.setCheckoutTimeout(8000);
             cpds.setLoginTimeout(8);
-            cpds.setTestConnectionOnCheckout(true);
-            cpds.setPreferredTestQuery("VALUES 1");
-    
+            cpds.setForceIgnoreUnresolvedTransactions(true);
+            //cpds.setTestConnectionOnCheckout(true);
+            //cpds.setPreferredTestQuery("VALUES 1");
+            cpds.setUser(user);
+            cpds.setPassword(password);
+   
             DS = cpds;
         }
         catch (Exception e)
@@ -190,7 +277,7 @@ public class BenchBase
     private void setupVibur()
     {
         ViburDBCPDataSource vibur = new ViburDBCPDataSource();
-        vibur.setJdbcUrl( "jdbc:stub" );
+        vibur.setJdbcUrl( jdbcUrl );
         vibur.setPoolInitialSize(MIN_POOL_SIZE);
         vibur.setPoolMaxSize(maxPoolSize);
         vibur.setTestConnectionQuery("VALUES 1");
