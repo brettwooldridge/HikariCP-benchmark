@@ -1,3 +1,9 @@
+
+### FORKED: README is out of date.
+
+The readme is out of date, this fork is used to do some specific benchmarks.
+Check the shell scripts, pom.xml and src files for more information on how to run it.
+
 [Click here to view unscaled version](https://github.com/brettwooldridge/HikariCP-benchmark/blob/master/README.md)
 
 ![](https://github.com/brettwooldridge/HikariCP/wiki/Benchmarks.png)
@@ -47,7 +53,7 @@ Pool size is only applicable for the *Connection Cycle* test, attempting to run 
 
 -----------------------------------------------------------
 **Specify which Benchmark**<br/>
-There are two benchmarks in the suite currently: *ConnectionBench* and *StatementBench*.  By default both benchmarks are run, but if you want to run one or the other you can use a JMH option using a regex (regular experession) to do so.  For example, to only run the *StatementBench* use:
+There are three benchmarks in the suite currently: *TRXBench*,  *ConnectionBench* and *StatementBench*.  By default all benchmarks are run, but if you want to run one or the other you can use a JMH option using a regex (regular experession) to do so.  For example, to only run the *StatementBench* use:
 ```
 ./benchmark.sh ".*Statement.*"
 ```
