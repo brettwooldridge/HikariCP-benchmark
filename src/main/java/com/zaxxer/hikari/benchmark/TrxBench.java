@@ -44,9 +44,9 @@ public class TrxBench extends BenchBase
     public Statement cycleStatement(ConnectionState state) throws SQLException
     {
             Connection con = DS.getConnection();
-	    //if ( con.getTransactionIsolation() != Connection.TRANSACTION_READ_COMMITTED ) {
+	    if ( con.getTransactionIsolation() != Connection.TRANSACTION_READ_COMMITTED ) {
 		    con.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-	    //}
+	    }
 	    con.setAutoCommit(false);
 	    PreparedStatement stmt = con.prepareStatement("select * from employees where emp_no = ?");
 	    stmt.setInt(1, 20000);

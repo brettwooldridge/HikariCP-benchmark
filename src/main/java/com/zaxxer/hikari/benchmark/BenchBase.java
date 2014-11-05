@@ -44,7 +44,7 @@ public class BenchBase
 {
     protected static final int MIN_POOL_SIZE = 0;
 
-    @Param({ "hikari", "bone", "tomcat", "c3p0", "vibur", "dbcp" })
+    @Param({ "hikari", "bone", "tomcat", "c3p0", "vibur", "dbcp", "c3p0-ht6" })
     public String pool;
 
     @Param({ "1", "2", "4", "8", "16", "32" })
@@ -55,12 +55,12 @@ public class BenchBase
 //    private String jdbcUrl = "jdbc:stub";
 //    private String dbDriver = "com.zaxxer.hikari.benchmark.stubs.StubDriver";
 //
-    //private String jdbcUrl= "jdbc:mariadb://localhost/employees";
-    //private String dbDriver =  "org.mariadb.jdbc.Driver";
+    private String jdbcUrl= "jdbc:mariadb://node2/employees";
+    private String dbDriver =  "org.mariadb.jdbc.Driver";
 
 
-    private String jdbcUrl= "jdbc:mysql://node2:3306/employees?useConfigs=maxPerformance&useServerPrepStmts=true&useLocalTransactionState=true";
-    private String dbDriver =  "com.mysql.jdbc.Driver";
+    //private String jdbcUrl= "jdbc:mysql://node2:3306/employees?useConfigs=maxPerformance&useServerPrepStmts=true&useLocalTransactionState=true";
+    //private String dbDriver =  "com.mysql.jdbc.Driver";
     private String user = "connj";
     private String password = "test";
 
@@ -174,7 +174,7 @@ public class BenchBase
 //        props.setTestOnBorrow(true);
         props.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 //        props.setValidationQuery("VALUES 1");
-//        props.setJdbcInterceptors("ConnectionState");
+        props.setJdbcInterceptors("ConnectionState");
 
         DS = new org.apache.tomcat.jdbc.pool.DataSource(props);
     }
