@@ -29,6 +29,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.vibur.dbcp.ViburDBCPDataSource;
 
+import com.alibaba.druid.pool.DruidDataSource;
 import com.jolbox.bonecp.BoneCPConfig;
 import com.jolbox.bonecp.BoneCPDataSource;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
@@ -40,7 +41,7 @@ public class BenchBase
 {
     protected static final int MIN_POOL_SIZE = 0;
 
-    @Param({ "hikari", "bone", "tomcat", "c3p0", "vibur" })
+    @Param({ "hikari", "bone", "tomcat", "c3p0", "vibur", "druid" })
     public String pool;
 
     @Param({ "32" })
@@ -77,6 +78,9 @@ public class BenchBase
         case "vibur":
             setupVibur();
             break;
+        case "druid":
+            setupDruid();
+            break;
         }
     }
 
@@ -99,6 +103,10 @@ public class BenchBase
             break;
         case "vibur":
             ((ViburDBCPDataSource) DS).terminate();
+            break;
+        case "druid":
+            ((DruidDataSource) DS).close();
+            break;
         }
     }
 
@@ -155,7 +163,6 @@ public class BenchBase
         config.setMaximumPoolSize(maxPoolSize);
         config.setConnectionTimeout(8000);
         config.setIdleTimeout(TimeUnit.MINUTES.toMillis(30));
-        config.setJdbc4ConnectionTest(true);
         config.setAutoCommit(false);
         config.setTransactionIsolation("TRANSACTION_READ_COMMITTED");
         config.setDataSourceClassName("com.zaxxer.hikari.benchmark.stubs.StubDataSource");
@@ -201,5 +208,23 @@ public class BenchBase
         vibur.start();
 
         DS = vibur;
+    }
+
+    protected void setupDruid()
+    {
+        DruidDataSource druid = new DruidDataSource();
+        druid.setUrl( "jdbc:stub" );
+        druid.setDriverClassName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
+        druid.setInitialSize(MIN_POOL_SIZE);
+        druid.setMinIdle(MIN_POOL_SIZE);
+        druid.setMaxActive(maxPoolSize);
+        druid.setMaxWait(5000);
+        druid.setValidationQuery("SELECT 1");
+        druid.setTestOnBorrow(true);
+        druid.setDefaultAutoCommit(false);
+        druid.setAsyncCloseConnectionEnable(true);
+        druid.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+
+        DS = druid;
     }
 }

@@ -23,6 +23,8 @@ import com.zaxxer.hikari.HikariDataSource;
 
 public class DbDownTest
 {
+    private static final String JDBC_URL = "jdbc:mysql://192.168.0.114/test";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DbDownTest.class);
 
     private static final int MIN_POOL_SIZE = 5;
@@ -107,7 +109,7 @@ public class DbDownTest
     protected DataSource setupTomcat()
     {
         PoolProperties props = new PoolProperties();
-        props.setUrl("jdbc:mysql://192.168.0.114/test");
+        props.setUrl(JDBC_URL);
         props.setDriverClassName("com.mysql.jdbc.Driver");
         props.setUsername("root");
         props.setPassword("");
@@ -126,7 +128,7 @@ public class DbDownTest
     protected DataSource setupBone()
     {
         BoneCPConfig config = new BoneCPConfig();
-        config.setJdbcUrl("jdbc:mysql://192.168.0.114/test");
+        config.setJdbcUrl(JDBC_URL);
         config.setUsername("root");
         config.setPassword("");
         config.setConnectionTimeoutInMs(5000);
@@ -143,7 +145,7 @@ public class DbDownTest
     protected DataSource setupHikari()
     {
         HikariConfig config = new HikariConfig();
-        config.setJdbcUrl("jdbc:mysql://192.168.0.114/test");
+        config.setJdbcUrl(JDBC_URL);
         config.setDriverClassName("com.mysql.jdbc.Driver");
         config.setUsername("root");
         config.setConnectionTimeout(5000);
@@ -160,7 +162,7 @@ public class DbDownTest
         try
         {
             ComboPooledDataSource cpds = new ComboPooledDataSource();
-            cpds.setJdbcUrl( "jdbc:mysql://192.168.0.114/test" );
+            cpds.setJdbcUrl( JDBC_URL );
             cpds.setUser("root");
             cpds.setCheckoutTimeout(5000);
             cpds.setTestConnectionOnCheckout(true);
@@ -184,16 +186,17 @@ public class DbDownTest
     private DataSource setupVibur()
     {
         ViburDBCPDataSource vibur = new ViburDBCPDataSource();
-        vibur.setJdbcUrl( "jdbc:mysql://192.168.0.114/test" );
+        vibur.setJdbcUrl( JDBC_URL );
         vibur.setUsername("root");
         vibur.setPassword("");
+        vibur.setConnectionIdleLimitInSeconds(0);
         vibur.setConnectionTimeoutInMs(5000);
         vibur.setLoginTimeoutInSeconds(5);
         vibur.setPoolEnableConnectionTracking(true);
         vibur.setResetDefaultsAfterUse(true);
         vibur.setPoolInitialSize(MIN_POOL_SIZE);
         vibur.setPoolMaxSize(maxPoolSize);
-        vibur.setTestConnectionQuery("SELECT 1");
+        // vibur.setTestConnectionQuery("SELECT 1");
         vibur.start();
 
         return vibur;
