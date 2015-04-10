@@ -2,12 +2,18 @@
 
 JAVA_OPTIONS="-server -XX:+AggressiveOpts -XX:+UseFastAccessorMethods -Xmx512m"
 
+JMH_THREADS="-t 8"
+if [[ "$2" == "-t" ]]; then
+   JMH_THREADS="-t $3"
+   set -- "$1" "${@:4}"
+fi
+
 if [[ ! -e "./target/microbenchmarks.jar" ]]; then
    mvn clean package
 fi
 
 if [[ "quick" == "$1" ]]; then
-   java -jar ./target/microbenchmarks.jar -jvmArgs "$JAVA_OPTIONS" -wi 3 -i 8 -t 8 -f 2 $2 $3 $4 $5 $6 $7 $8 $9
+   java -jar ./target/microbenchmarks.jar -jvmArgs "$JAVA_OPTIONS" -wi 3 -i 8 $JMH_THREADS -f 2 $2 $3 $4 $5 $6 $7 $8 $9
 elif [[ "medium" == "$1" ]]; then
    java -jar ./target/microbenchmarks.jar -jvmArgs "$JAVA_OPTIONS" -wi 3 -t 8 -f 3 $2 $3 $4 $5 $6 $7 $8 $9
 elif [[ "profile" == "$1" ]]; then
