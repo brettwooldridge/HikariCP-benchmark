@@ -86,7 +86,7 @@ public class BenchBase
         switch (pool)
         {
         case "hikari":
-            ((HikariDataSource) DS).shutdown();
+            ((HikariDataSource) DS).close();
             break;
         case "bone":
             ((BoneCPDataSource) DS).close();
@@ -120,8 +120,7 @@ public class BenchBase
         props.setMinEvictableIdleTimeMillis((int) TimeUnit.MINUTES.toMillis(30));
         props.setTestOnBorrow(true);
         props.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-        props.setValidationQuery("VALUES 1");
-        props.setJdbcInterceptors("ConnectionState");
+        props.setJdbcInterceptors("ConnectionState;StatementFinalizer");
 
         DS = new org.apache.tomcat.jdbc.pool.DataSource(props);
     }
@@ -193,7 +192,6 @@ public class BenchBase
         vibur.setJdbcUrl( "jdbc:stub" );
         vibur.setPoolInitialSize(MIN_POOL_SIZE);
         vibur.setPoolMaxSize(maxPoolSize);
-        vibur.setTestConnectionQuery("VALUES 1");
         vibur.setDefaultAutoCommit(false);
         vibur.setResetDefaultsAfterUse(true);
         vibur.setConnectionIdleLimitInSeconds(1);
