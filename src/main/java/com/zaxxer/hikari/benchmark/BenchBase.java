@@ -117,6 +117,7 @@ public class BenchBase
         props.setMaxWait(8000);
         props.setDefaultAutoCommit(false);
         props.setRollbackOnReturn(true);
+        props.setFairQueue(false);
         props.setMinEvictableIdleTimeMillis((int) TimeUnit.MINUTES.toMillis(30));
         props.setTestOnBorrow(true);
         props.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
@@ -190,6 +191,7 @@ public class BenchBase
     {
         ViburDBCPDataSource vibur = new ViburDBCPDataSource();
         vibur.setJdbcUrl( "jdbc:stub" );
+        vibur.setPoolFair(false);
         vibur.setPoolInitialSize(MIN_POOL_SIZE);
         vibur.setPoolMaxSize(maxPoolSize);
         vibur.setDefaultAutoCommit(false);
