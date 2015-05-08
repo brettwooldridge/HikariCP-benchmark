@@ -2,14 +2,15 @@
 
 JAVA_OPTIONS="-server -XX:+AggressiveOpts -XX:+UseFastAccessorMethods -Xmx512m"
 
+if [[ "clean" == "$1" ]]; then
+   mvn clean package
+   shift
+fi
+
 JMH_THREADS="-t 8"
 if [[ "$2" == "-t" ]]; then
    JMH_THREADS="-t $3"
    set -- "$1" "${@:4}"
-fi
-
-if [[ ! -e "./target/microbenchmarks.jar" ]]; then
-   mvn clean package
 fi
 
 if [[ "quick" == "$1" ]]; then
@@ -25,3 +26,4 @@ elif [[ "debug" == "$1" ]]; then
 else
    java -jar ./target/microbenchmarks.jar -jvmArgs "$JAVA_OPTIONS" -wi 3 -i 15 -t 8 $1 $2 $3 $4 $5 $6 $7 $8 $9
 fi
+
