@@ -1,3 +1,5 @@
+[![Dependency Status](https://www.versioneye.com/user/projects/55501400f7db0da74e00017f/badge.svg?style=flat)](https://www.versioneye.com/user/projects/55501400f7db0da74e00017f)
+
 [Click here to view unscaled version](https://github.com/brettwooldridge/HikariCP-benchmark/blob/master/README.md)
 
 ![](https://github.com/brettwooldridge/HikariCP/wiki/Benchmarks.png)
