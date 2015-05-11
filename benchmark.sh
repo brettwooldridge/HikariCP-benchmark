@@ -1,9 +1,14 @@
 #!/bin/bash
 
-JAVA_OPTIONS="-server -XX:+AggressiveOpts -XX:+UseFastAccessorMethods -Xmx512m"
+JAVA_OPTIONS="-server -XX:+AggressiveOpts -XX:+UseFastAccessorMethods -Xms1096m -Xmx1096m"
 
 if [[ "clean" == "$1" ]]; then
    mvn clean package
+   shift
+fi
+
+if [[ "gcprof" == "$1" ]]; then
+   JAVA_OPTIONS="$JAVA_OPTIONS -Xloggc:gc.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps"
    shift
 fi
 
