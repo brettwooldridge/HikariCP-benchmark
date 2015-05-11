@@ -19,24 +19,37 @@ package com.zaxxer.hikari.benchmark;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.annotations.Measurement;
 
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
 public class ConnectionBench extends BenchBase
 {
+    private final LongAdder cycles = new LongAdder();
+
     @Benchmark
     public Connection cycleCnnection() throws SQLException
     {
         Connection connection = DS.getConnection();
         connection.close();
+        cycles.increment();
         return connection;
+    }
+
+    @TearDown(Level.Trial)
+    public void teardown()
+    {
+        System.err.printf("\nConnection cycles completed: %d\n", cycles.sum());
     }
 }

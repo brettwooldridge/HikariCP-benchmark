@@ -27,6 +27,7 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.infra.BenchmarkParams;
 import org.vibur.dbcp.ViburDBCPDataSource;
 
 import com.jolbox.bonecp.BoneCPConfig;
@@ -49,7 +50,7 @@ public class BenchBase
     public static volatile DataSource DS;
 
     @Setup
-    public void setup()
+    public void setup(BenchmarkParams params)
     {
         try
         {
@@ -60,13 +61,18 @@ public class BenchBase
             throw new RuntimeException(e);
         }
 
+        if (this.getClass().getName().contains("Statement")) {
+            System.err.println("# Overriding maxPoolSize paramter for StatementBench: maxPoolSize=" + params.getThreads());
+            maxPoolSize = params.getThreads();
+        }
+
         switch (pool)
         {
         case "hikari":
             setupHikari();
             break;
         case "bone":
-            setupBone();
+            setupBone(params);
             break;
         case "tomcat":
             setupTomcat();
@@ -126,7 +132,7 @@ public class BenchBase
         DS = new org.apache.tomcat.jdbc.pool.DataSource(props);
     }
 
-    protected void setupBone()
+    protected void setupBone(BenchmarkParams params)
     {
         BoneCPConfig config = new BoneCPConfig();
         config.setAcquireIncrement(1);
@@ -134,7 +140,7 @@ public class BenchBase
         config.setMaxConnectionsPerPartition(maxPoolSize);
         config.setConnectionTimeoutInMs(8000);
         config.setIdleMaxAgeInMinutes(30);
-        config.setConnectionTestStatement("VALUES 1");
+        // config.setConnectionTestStatement("VALUES 1");
         config.setCloseOpenStatements(true);
         config.setDisableConnectionTracking(true);
         config.setDefaultAutoCommit(false);
@@ -144,7 +150,12 @@ public class BenchBase
         config.setJdbcUrl("jdbc:stub");
         config.setUsername("nobody");
         config.setPassword("nopass");
-        config.setPoolStrategy("CACHED");
+        if (params.getThreads() > maxPoolSize) {
+            config.setPoolStrategy("DEFAULT");
+        }
+        else {
+            config.setPoolStrategy("CACHED");
+        }
 
         DS = new BoneCPDataSource(config);
     }
@@ -177,7 +188,7 @@ public class BenchBase
             cpds.setCheckoutTimeout(8000);
             cpds.setLoginTimeout(8);
             cpds.setTestConnectionOnCheckout(true);
-            cpds.setPreferredTestQuery("VALUES 1");
+            // cpds.setPreferredTestQuery("VALUES 1");
     
             DS = cpds;
         }
@@ -196,7 +207,7 @@ public class BenchBase
         vibur.setPoolMaxSize(maxPoolSize);
         vibur.setDefaultAutoCommit(false);
         vibur.setResetDefaultsAfterUse(true);
-        vibur.setConnectionIdleLimitInSeconds(1);
+        vibur.setConnectionIdleLimitInSeconds(30);
         vibur.setDefaultTransactionIsolation("READ_COMMITTED");
         vibur.start();
 
