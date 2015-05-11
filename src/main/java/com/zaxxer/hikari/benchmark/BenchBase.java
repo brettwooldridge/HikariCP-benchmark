@@ -61,7 +61,7 @@ public class BenchBase
             throw new RuntimeException(e);
         }
 
-        if (this.getClass().getName().contains("Statement")) {
+        if (this.getClass().getName().contains("Statement") && maxPoolSize < params.getThreads()) {
             System.err.println("# Overriding maxPoolSize paramter for StatementBench: maxPoolSize=" + params.getThreads());
             maxPoolSize = params.getThreads();
         }

@@ -29,14 +29,13 @@ import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
-import org.openjdk.jmh.annotations.Measurement;
 
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
 public class ConnectionBench extends BenchBase
 {
-    private final LongAdder cycles = new LongAdder();
+    private static final LongAdder cycles = new LongAdder();
 
     @Benchmark
     public Connection cycleCnnection() throws SQLException
