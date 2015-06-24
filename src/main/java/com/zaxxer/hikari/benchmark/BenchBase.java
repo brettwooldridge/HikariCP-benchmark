@@ -17,10 +17,12 @@
 package com.zaxxer.hikari.benchmark;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
 
+import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.tomcat.jdbc.pool.PoolProperties;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
@@ -30,8 +32,6 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.infra.BenchmarkParams;
 import org.vibur.dbcp.ViburDBCPDataSource;
 
-import com.jolbox.bonecp.BoneCPConfig;
-import com.jolbox.bonecp.BoneCPDataSource;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -41,7 +41,7 @@ public class BenchBase
 {
     protected static final int MIN_POOL_SIZE = 0;
 
-    @Param({ "hikari", "bone", "tomcat", "c3p0", "vibur" })
+    @Param({ "hikari", "dbcp2", "tomcat", "c3p0", "vibur" })
     public String pool;
 
     @Param({ "32" })
@@ -71,11 +71,11 @@ public class BenchBase
         case "hikari":
             setupHikari();
             break;
-        case "bone":
-            setupBone(params);
-            break;
         case "tomcat":
             setupTomcat();
+            break;
+        case "dbcp2":
+            setupDbcp2();
             break;
         case "c3p0":
             setupC3P0();
@@ -87,18 +87,18 @@ public class BenchBase
     }
 
     @TearDown
-    public void teardown()
+    public void teardown() throws SQLException
     {
         switch (pool)
         {
         case "hikari":
             ((HikariDataSource) DS).close();
             break;
-        case "bone":
-            ((BoneCPDataSource) DS).close();
-            break;
         case "tomcat":
             ((org.apache.tomcat.jdbc.pool.DataSource) DS).close();
+            break;
+        case "dbcp2":
+            ((BasicDataSource) DS).close();
             break;
         case "c3p0":
             ((ComboPooledDataSource) DS).close();
@@ -132,32 +132,26 @@ public class BenchBase
         DS = new org.apache.tomcat.jdbc.pool.DataSource(props);
     }
 
-    protected void setupBone(BenchmarkParams params)
+    protected void setupDbcp2()
     {
-        BoneCPConfig config = new BoneCPConfig();
-        config.setAcquireIncrement(1);
-        config.setMinConnectionsPerPartition(MIN_POOL_SIZE);
-        config.setMaxConnectionsPerPartition(maxPoolSize);
-        config.setConnectionTimeoutInMs(8000);
-        config.setIdleMaxAgeInMinutes(30);
-        // config.setConnectionTestStatement("VALUES 1");
-        config.setCloseOpenStatements(true);
-        config.setDisableConnectionTracking(true);
-        config.setDefaultAutoCommit(false);
-        config.setResetConnectionOnClose(true);
-        config.setDefaultTransactionIsolation("READ_COMMITTED");
-        config.setDisableJMX(true);
-        config.setJdbcUrl("jdbc:stub");
-        config.setUsername("nobody");
-        config.setPassword("nopass");
-        if (params.getThreads() > maxPoolSize) {
-            config.setPoolStrategy("DEFAULT");
-        }
-        else {
-            config.setPoolStrategy("CACHED");
-        }
+        BasicDataSource ds = new BasicDataSource();
+        ds.setUrl("jdbc:stub");
+        ds.setDriverClassName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
+        ds.setUsername("sa");
+        ds.setPassword("");
+        ds.setInitialSize(MIN_POOL_SIZE);
+        ds.setMinIdle(MIN_POOL_SIZE);
+        ds.setMaxIdle(maxPoolSize);
+        ds.setMaxTotal(maxPoolSize);
+        ds.setMaxWaitMillis(8000);
+        ds.setDefaultAutoCommit(false);
+        ds.setRollbackOnReturn(true);
+        ds.setMinEvictableIdleTimeMillis((int) TimeUnit.MINUTES.toMillis(30));
+        ds.setTestOnBorrow(true);
+        ds.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+        ds.setFastFailValidation(true);
 
-        DS = new BoneCPDataSource(config);
+        DS = ds;
     }
 
     protected void setupHikari()
