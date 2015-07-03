@@ -17,6 +17,7 @@
 package com.zaxxer.hikari.benchmark;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
 
@@ -47,6 +48,9 @@ public class BenchBase
     @Param({ "32" })
     public int maxPoolSize;
 
+    @Param({ "jdbc:stub" })
+    public String jdbcUrl;
+
     public static volatile DataSource DS;
 
     @Setup
@@ -55,8 +59,9 @@ public class BenchBase
         try
         {
             Class.forName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
+            System.err.printf("Using driver (%s): %s", jdbcUrl, DriverManager.getDriver(jdbcUrl));
         }
-        catch (ClassNotFoundException e)
+        catch (Exception e)
         {
             throw new RuntimeException(e);
         }
@@ -112,9 +117,9 @@ public class BenchBase
     protected void setupTomcat()
     {
         PoolProperties props = new PoolProperties();
-        props.setUrl("jdbc:stub");
-        props.setDriverClassName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
-        props.setUsername("sa");
+        props.setUrl(jdbcUrl);
+        // props.setDriverClassName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
+        props.setUsername("brettw");
         props.setPassword("");
         props.setInitialSize(MIN_POOL_SIZE);
         props.setMinIdle(MIN_POOL_SIZE);
@@ -135,9 +140,8 @@ public class BenchBase
     protected void setupDbcp2()
     {
         BasicDataSource ds = new BasicDataSource();
-        ds.setUrl("jdbc:stub");
-        ds.setDriverClassName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
-        ds.setUsername("sa");
+        ds.setUrl(jdbcUrl);
+        ds.setUsername("brettw");
         ds.setPassword("");
         ds.setInitialSize(MIN_POOL_SIZE);
         ds.setMinIdle(MIN_POOL_SIZE);
@@ -157,13 +161,15 @@ public class BenchBase
     protected void setupHikari()
     {
         HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(jdbcUrl);
         config.setMinimumIdle(MIN_POOL_SIZE);
         config.setMaximumPoolSize(maxPoolSize);
         config.setConnectionTimeout(8000);
         config.setIdleTimeout(TimeUnit.MINUTES.toMillis(30));
         config.setAutoCommit(false);
+        config.setUsername("brettw");
+        config.setPassword("");
         config.setTransactionIsolation("TRANSACTION_READ_COMMITTED");
-        config.setDataSourceClassName("com.zaxxer.hikari.benchmark.stubs.StubDataSource");
 
         DS = new HikariDataSource(config);
     }
@@ -173,8 +179,10 @@ public class BenchBase
         try
         {
             ComboPooledDataSource cpds = new ComboPooledDataSource();
-            cpds.setDriverClass( "com.zaxxer.hikari.benchmark.stubs.StubDriver" );            
-            cpds.setJdbcUrl( "jdbc:stub" );
+            // cpds.setDriverClass( "com.zaxxer.hikari.benchmark.stubs.StubDriver" );
+            cpds.setJdbcUrl( jdbcUrl );
+            cpds.setUser("brettw");
+            cpds.setPassword("");
             cpds.setAcquireIncrement(1);
             cpds.setInitialPoolSize(MIN_POOL_SIZE);
             cpds.setMinPoolSize(MIN_POOL_SIZE);
@@ -195,7 +203,9 @@ public class BenchBase
     private void setupVibur()
     {
         ViburDBCPDataSource vibur = new ViburDBCPDataSource();
-        vibur.setJdbcUrl( "jdbc:stub" );
+        vibur.setJdbcUrl( jdbcUrl );
+        vibur.setUsername("brettw");
+        vibur.setPassword("");
         vibur.setPoolFair(false);
         vibur.setPoolInitialSize(MIN_POOL_SIZE);
         vibur.setPoolMaxSize(maxPoolSize);

@@ -38,9 +38,14 @@ questions.
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
-            <version>2.4.0-rc3-SNAPSHOT</version>
+            <version>2.4.0-rc4-SNAPSHOT</version>
             <!-- version>2.3.8</version -->
         </dependency>
+      <!-- dependency>
+         <groupId>io.dropwizard.metrics</groupId>
+         <artifactId>metrics-core</artifactId>
+         <version>3.1.2</version>
+      </dependency -->
         <dependency>
             <groupId>com.jolbox</groupId>
             <artifactId>bonecp</artifactId>
@@ -61,11 +66,11 @@ questions.
             <artifactId>c3p0</artifactId>
             <version>0.9.5.1</version>
         </dependency>
-        <dependency>
-        	<groupId>org.apache.commons</groupId>
-        	<artifactId>commons-dbcp2</artifactId>
-        	<version>2.1</version>
-        </dependency>
+		<dependency>
+		    <groupId>mysql</groupId>
+		    <artifactId>mysql-connector-java</artifactId>
+		    <version>5.1.36</version>
+		</dependency>
         <dependency>
             <groupId>org.vibur</groupId>
             <artifactId>vibur-dbcp</artifactId>
@@ -111,8 +116,8 @@ questions.
                 <version>3.3</version>
                 <configuration>
                     <compilerVersion>1.8</compilerVersion>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>1.7</source>
+                    <target>1.7</target>
                 </configuration>
             </plugin>
             <plugin>
