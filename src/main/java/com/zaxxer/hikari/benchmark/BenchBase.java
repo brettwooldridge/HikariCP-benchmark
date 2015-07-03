@@ -19,12 +19,13 @@ package com.zaxxer.hikari.benchmark;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.tomcat.jdbc.pool.PoolProperties;
+import org.apache.tomcat.jdbc.pool.PooledConnection;
+import org.apache.tomcat.jdbc.pool.Validator;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
@@ -42,7 +43,7 @@ public class BenchBase
 {
     protected static final int MIN_POOL_SIZE = 0;
 
-    @Param({ "hikari", "dbcp2", "tomcat", "c3p0", "vibur" })
+    @Param({ "hikari", "dbcp", "dbcp2", "tomcat", "c3p0", "vibur" })
     public String pool;
 
     @Param({ "32" })
@@ -79,6 +80,9 @@ public class BenchBase
         case "tomcat":
             setupTomcat();
             break;
+        case "dbcp":
+            setupDbcp();
+            break;
         case "dbcp2":
             setupDbcp2();
             break;
@@ -101,6 +105,9 @@ public class BenchBase
             break;
         case "tomcat":
             ((org.apache.tomcat.jdbc.pool.DataSource) DS).close();
+            break;
+        case "dbcp":
+            ((org.apache.commons.dbcp.BasicDataSource) DS).close();
             break;
         case "dbcp2":
             ((BasicDataSource) DS).close();
@@ -126,15 +133,47 @@ public class BenchBase
         props.setMaxIdle(maxPoolSize);
         props.setMaxActive(maxPoolSize);
         props.setMaxWait(8000);
+
         props.setDefaultAutoCommit(false);
+
         props.setRollbackOnReturn(true);
-        props.setFairQueue(false);
-        props.setMinEvictableIdleTimeMillis((int) TimeUnit.MINUTES.toMillis(30));
+        props.setUseDisposableConnectionFacade(true);
+        props.setJdbcInterceptors("org.apache.tomcat.jdbc.pool.interceptor.ConnectionState;org.apache.tomcat.jdbc.pool.interceptor.StatementFinalizer");
         props.setTestOnBorrow(true);
-        props.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-        props.setJdbcInterceptors("ConnectionState;StatementFinalizer");
+        props.setValidationInterval(1000);
+        props.setValidator(new Validator() {
+            @Override
+            public boolean validate(Connection connection, int validateAction)
+            {
+                try {
+                    return (validateAction == PooledConnection.VALIDATE_BORROW ? connection.isValid(0) : true);
+                }
+                catch (SQLException e)
+                {
+                    return false;
+                }
+            }
+        });
 
         DS = new org.apache.tomcat.jdbc.pool.DataSource(props);
+    }
+
+    protected void setupDbcp()
+    {
+        org.apache.commons.dbcp.BasicDataSource ds = new org.apache.commons.dbcp.BasicDataSource();
+        ds.setUrl(jdbcUrl);
+        ds.setUsername("brettw");
+        ds.setPassword("");
+        ds.setInitialSize(MIN_POOL_SIZE);
+        ds.setMinIdle(MIN_POOL_SIZE);
+        ds.setMaxIdle(maxPoolSize);
+        ds.setMaxActive(maxPoolSize);
+
+        ds.setDefaultAutoCommit(false);
+        ds.setTestOnBorrow(true);
+        ds.setValidationQuery("SELECT 1");
+
+        DS = ds;
     }
 
     protected void setupDbcp2()
@@ -148,11 +187,12 @@ public class BenchBase
         ds.setMaxIdle(maxPoolSize);
         ds.setMaxTotal(maxPoolSize);
         ds.setMaxWaitMillis(8000);
+
         ds.setDefaultAutoCommit(false);
         ds.setRollbackOnReturn(true);
-        ds.setMinEvictableIdleTimeMillis((int) TimeUnit.MINUTES.toMillis(30));
+        ds.setEnableAutoCommitOnReturn(false);
         ds.setTestOnBorrow(true);
-        ds.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+        ds.setCacheState(true);
         ds.setFastFailValidation(true);
 
         DS = ds;
@@ -162,14 +202,12 @@ public class BenchBase
     {
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(jdbcUrl);
+        config.setUsername("brettw");
+        config.setPassword("");
         config.setMinimumIdle(MIN_POOL_SIZE);
         config.setMaximumPoolSize(maxPoolSize);
         config.setConnectionTimeout(8000);
-        config.setIdleTimeout(TimeUnit.MINUTES.toMillis(30));
         config.setAutoCommit(false);
-        config.setUsername("brettw");
-        config.setPassword("");
-        config.setTransactionIsolation("TRANSACTION_READ_COMMITTED");
 
         DS = new HikariDataSource(config);
     }
@@ -179,7 +217,6 @@ public class BenchBase
         try
         {
             ComboPooledDataSource cpds = new ComboPooledDataSource();
-            // cpds.setDriverClass( "com.zaxxer.hikari.benchmark.stubs.StubDriver" );
             cpds.setJdbcUrl( jdbcUrl );
             cpds.setUser("brettw");
             cpds.setPassword("");
@@ -212,7 +249,6 @@ public class BenchBase
         vibur.setDefaultAutoCommit(false);
         vibur.setResetDefaultsAfterUse(true);
         vibur.setConnectionIdleLimitInSeconds(30);
-        vibur.setDefaultTransactionIsolation("READ_COMMITTED");
         vibur.start();
 
         DS = vibur;
