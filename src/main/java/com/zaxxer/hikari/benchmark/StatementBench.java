@@ -20,7 +20,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.LongAdder;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -38,22 +37,13 @@ import org.openjdk.jmh.infra.Blackhole;
 @State(Scope.Benchmark)
 public class StatementBench extends BenchBase
 {
-    private static final LongAdder cycles = new LongAdder();
-
     @Benchmark
     public Statement cycleStatement(ConnectionState state) throws SQLException
     {
         Statement statement = state.connection.createStatement();
         state.consume(statement.execute("INSERT INTO test (column) VALUES (?)"));
         statement.close();
-        cycles.increment();
         return statement;
-    }
-
-    @TearDown(Level.Trial)
-    public void teardown()
-    {
-        System.err.printf("\nStatement cycles completed: %d\n", cycles.sum());
     }
 
     @State(Scope.Thread)

@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
 
-import org.apache.tomcat.jdbc.pool.PoolProperties;
+import org.apache.commons.dbcp2.BasicDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vibur.dbcp.ViburDBCPDataSource;
@@ -48,7 +48,7 @@ public class DbDownTest
         c3p0DS = setupC3P0();
         viburDS = setupVibur();
         boneDS = setupBone();
-        tomcatDS = setupTomcat();
+        tomcatDS = setupDbcp();
     }
 
     private void start()
@@ -106,23 +106,28 @@ public class DbDownTest
         }
     }
 
-    protected DataSource setupTomcat()
+    protected DataSource setupDbcp()
     {
-        PoolProperties props = new PoolProperties();
-        props.setUrl(JDBC_URL);
-        props.setDriverClassName("com.mysql.jdbc.Driver");
-        props.setUsername("root");
-        props.setPassword("");
-        props.setMaxWait(5000);
-        props.setValidationQueryTimeout(5);
-        props.setTestOnBorrow(true);
-        props.setInitialSize(MIN_POOL_SIZE);
-        props.setMinIdle(MIN_POOL_SIZE);
-        props.setMaxIdle(maxPoolSize);
-        props.setMaxActive(maxPoolSize);
-        props.setValidationQuery("SELECT 1");
+        BasicDataSource ds = new BasicDataSource();
+        ds.setUrl("jdbc:stub");
+        ds.setDriverClassName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
+        ds.setUsername("sa");
+        ds.setPassword("");
+        ds.setInitialSize(MIN_POOL_SIZE);
+        ds.setMinIdle(MIN_POOL_SIZE);
+        ds.setMaxIdle(maxPoolSize);
+        ds.setMaxTotal(maxPoolSize);
+        ds.setMaxWaitMillis(8000);
+        ds.setDefaultAutoCommit(false);
+        ds.setRollbackOnReturn(true);
+        ds.setMinEvictableIdleTimeMillis((int) TimeUnit.MINUTES.toMillis(30));
+        ds.setTestOnBorrow(true);
+        ds.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+        ds.setLifo(true);
+        ds.setFastFailValidation(true);
+        ds.setRollbackOnReturn(true);
 
-        return new org.apache.tomcat.jdbc.pool.DataSource(props);
+        return ds;
     }
 
     protected DataSource setupBone()
