@@ -125,7 +125,7 @@ public class BenchBase
     {
         PoolProperties props = new PoolProperties();
         props.setUrl(jdbcUrl);
-        // props.setDriverClassName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
+        props.setDriverClassName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
         props.setUsername("brettw");
         props.setPassword("");
         props.setInitialSize(MIN_POOL_SIZE);
