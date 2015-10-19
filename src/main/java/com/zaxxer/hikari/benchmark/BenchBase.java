@@ -19,6 +19,7 @@ package com.zaxxer.hikari.benchmark;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Properties;
 
 import javax.sql.DataSource;
 
@@ -26,6 +27,7 @@ import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.tomcat.jdbc.pool.PoolProperties;
 import org.apache.tomcat.jdbc.pool.PooledConnection;
 import org.apache.tomcat.jdbc.pool.Validator;
+import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
@@ -38,12 +40,14 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
+import one.datasource.DataSourceImpl;
+
 @State(Scope.Benchmark)
 public class BenchBase
 {
     protected static final int MIN_POOL_SIZE = 0;
 
-    @Param({ "hikari", "dbcp", "dbcp2", "tomcat", "c3p0", "vibur" })
+    @Param({ "hikari", "dbcp", "dbcp2", "tomcat", "c3p0", "vibur", "one" })
     public String pool;
 
     @Param({ "32" })
@@ -52,9 +56,9 @@ public class BenchBase
     @Param({ "jdbc:stub" })
     public String jdbcUrl;
 
-    public static volatile DataSource DS;
+    public static DataSource DS;
 
-    @Setup
+    @Setup(Level.Trial)
     public void setup(BenchmarkParams params)
     {
         try
@@ -92,10 +96,13 @@ public class BenchBase
         case "vibur":
             setupVibur();
             break;
+        case "one":
+            setupOne();
+            break;
         }
     }
 
-    @TearDown
+    @TearDown(Level.Trial)
     public void teardown() throws SQLException
     {
         switch (pool)
@@ -252,5 +259,14 @@ public class BenchBase
         vibur.start();
 
         DS = vibur;
+    }
+
+    private void setupOne()
+    {
+        Properties props = new Properties();
+        props.put("url", jdbcUrl);
+        props.put("driver", "com.zaxxer.hikari.benchmark.stubs.StubDriver");
+        
+        DS = new DataSourceImpl("one", props);
     }
 }

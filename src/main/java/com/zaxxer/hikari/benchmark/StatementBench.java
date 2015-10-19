@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.CompilerControl;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
@@ -34,14 +35,21 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 
-@State(Scope.Thread)
+//@State(Scope.Benchmark)
+//@Warmup(iterations=3, batchSize=1_000_000)
+//@Measurement(iterations=8, batchSize=1_000_000)
+//@BenchmarkMode(Mode.SingleShotTime)
+//@OutputTimeUnit(TimeUnit.NANOSECONDS)
+
+@State(Scope.Benchmark)
+@Warmup(iterations=3)
+@Measurement(iterations=8)
+@BenchmarkMode(Mode.Throughput)
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
 public class StatementBench extends BenchBase
 {
     @Benchmark
-    @Warmup(iterations=3, batchSize=50000)
-    @Measurement(iterations=5, batchSize=50000)
-    @BenchmarkMode(Mode.SingleShotTime)
-    @OutputTimeUnit(TimeUnit.NANOSECONDS)
+    @CompilerControl(CompilerControl.Mode.INLINE)
     public Statement cycleStatement(ConnectionState state) throws SQLException
     {
         Statement statement = state.connection.createStatement();

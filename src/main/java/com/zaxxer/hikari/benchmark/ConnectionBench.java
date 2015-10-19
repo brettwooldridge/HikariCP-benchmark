@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.CompilerControl;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
@@ -29,15 +30,26 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
-@State(Scope.Thread)
+//@State(Scope.Benchmark)
+//@Warmup(iterations=3, batchSize=1_000_000)
+//@Measurement(iterations=8, batchSize=1_000_000)
+//@BenchmarkMode(Mode.SingleShotTime)
+//@OutputTimeUnit(TimeUnit.NANOSECONDS)
+
+@Warmup(iterations=3)
+@Measurement(iterations=8)
+@BenchmarkMode(Mode.Throughput)
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
+
+//@Warmup(iterations=3)
+//@Measurement(iterations=8)
+//@BenchmarkMode(Mode.SampleTime)
+//@OutputTimeUnit(TimeUnit.MILLISECONDS)
 public class ConnectionBench extends BenchBase
 {
     @Benchmark
-    @Warmup(iterations=3, batchSize=50000)
-    @Measurement(iterations=5, batchSize=50000)
-    @BenchmarkMode(Mode.SingleShotTime)
-    @OutputTimeUnit(TimeUnit.NANOSECONDS)
-    public Connection cycleCnnection() throws SQLException
+    @CompilerControl(CompilerControl.Mode.INLINE)
+    public static Connection cycleCnnection() throws SQLException
     {
         Connection connection = DS.getConnection();
         connection.close();

@@ -55,11 +55,11 @@ questions.
             <artifactId>tomcat-jdbc</artifactId>
             <version>8.0.24</version>
         </dependency>
-      <dependency>
-         <groupId>io.dropwizard.metrics</groupId>
-         <artifactId>metrics-core</artifactId>
-         <version>3.1.2</version>
-      </dependency>
+		<dependency>
+		   <groupId>io.dropwizard.metrics</groupId>
+		   <artifactId>metrics-core</artifactId>
+		   <version>3.1.2</version>
+		</dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-dbcp2</artifactId>
@@ -75,6 +75,13 @@ questions.
             <artifactId>c3p0</artifactId>
             <version>0.9.5.1</version>
         </dependency>
+		<dependency>
+		    <groupId>one.datasource</groupId>
+		    <artifactId>one</artifactId>
+            <version>1.0.0</version>
+		    <scope>system</scope>
+		    <systemPath>${project.basedir}/lib/one-datasource.jar</systemPath>
+		</dependency>
 		<dependency>
 		    <groupId>mysql</groupId>
 		    <artifactId>mysql-connector-java</artifactId>
@@ -111,6 +118,11 @@ questions.
         	<artifactId>jmh-generator-annprocess</artifactId>
         	<version>1.10</version>
         </dependency>
+        <dependency>
+        	<groupId>javax.transaction</groupId>
+        	<artifactId>jta</artifactId>
+        	<version>1.1</version>
+        </dependency>
     </dependencies>
 
     <properties>
@@ -119,6 +131,25 @@ questions.
 
     <build>
         <plugins>
+		<plugin>
+		    <groupId>com.googlecode.addjars-maven-plugin</groupId>
+		    <artifactId>addjars-maven-plugin</artifactId>
+		    <version>1.0.5</version>
+		    <executions>
+		        <execution>
+		            <goals>
+		                <goal>add-jars</goal>
+		            </goals>
+		            <configuration>
+		                <resources>
+		                    <resource>
+		                        <directory>${basedir}/lib</directory>
+		                    </resource>
+		                </resources>
+		            </configuration>
+		        </execution>
+		    </executions>
+		</plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
