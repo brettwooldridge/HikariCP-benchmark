@@ -1,8 +1,6 @@
 [![Dependency Status](https://www.versioneye.com/user/projects/55501400f7db0da74e00017f/badge.svg?style=flat)](https://www.versioneye.com/user/projects/55501400f7db0da74e00017f)
 
-[Click here to view unscaled version](https://github.com/brettwooldridge/HikariCP-benchmark/blob/master/README.md)
-
-![](https://github.com/brettwooldridge/HikariCP/wiki/Benchmarks.png)
+![](https://github.com/brettwooldridge/HikariCP/wiki/HikariCP-bench-2.4.0.png)
 
 *ConnectionCycle* measures cycles of ``DataSource.getConnection()/Connection.close()``. *StatementCycle* measures cycles of ``Connection.prepareStatement()``, ``Statement.execute()``, ``Statement.close()``.
 
