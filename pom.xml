@@ -38,13 +38,13 @@ questions.
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
-            <version>2.4.2-RC1</version>
+            <version>2.4.3</version>
         </dependency>
-      <!-- dependency>
-         <groupId>io.dropwizard.metrics</groupId>
-         <artifactId>metrics-core</artifactId>
-         <version>3.1.2</version>
-      </dependency -->
+        <!-- dependency>
+           <groupId>io.dropwizard.metrics</groupId>
+           <artifactId>metrics-core</artifactId>
+           <version>3.1.2</version>
+        </dependency -->
         <dependency>
             <groupId>com.jolbox</groupId>
             <artifactId>bonecp</artifactId>
@@ -53,13 +53,13 @@ questions.
         <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-jdbc</artifactId>
-            <version>8.0.24</version>
+            <version>8.0.30</version>
         </dependency>
-		<dependency>
-		   <groupId>io.dropwizard.metrics</groupId>
-		   <artifactId>metrics-core</artifactId>
-		   <version>3.1.2</version>
-		</dependency>
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+            <version>3.1.2</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-dbcp2</artifactId>
@@ -73,24 +73,24 @@ questions.
         <dependency>
             <groupId>com.mchange</groupId>
             <artifactId>c3p0</artifactId>
-            <version>0.9.5.1</version>
+            <version>0.9.5.2</version>
         </dependency>
-		<dependency>
-		    <groupId>one.datasource</groupId>
-		    <artifactId>one</artifactId>
+        <dependency>
+            <groupId>one.datasource</groupId>
+            <artifactId>one</artifactId>
             <version>1.0.0</version>
-		    <scope>system</scope>
-		    <systemPath>${project.basedir}/lib/one-datasource.jar</systemPath>
-		</dependency>
-		<dependency>
-		    <groupId>mysql</groupId>
-		    <artifactId>mysql-connector-java</artifactId>
-		    <version>5.1.36</version>
-		</dependency>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/one-datasource.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.38</version>
+        </dependency>
         <dependency>
             <groupId>org.vibur</groupId>
             <artifactId>vibur-dbcp</artifactId>
-            <version>4.0</version>
+            <version>8.0</version>
             <exclusions>
                 <exclusion>
                     <artifactId>log4j</artifactId>
@@ -105,23 +105,23 @@ questions.
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>1.7.12</version>
+            <version>1.7.16</version>
             <optional>true</optional>
         </dependency>
         <dependency>
-        	<groupId>org.openjdk.jmh</groupId>
-        	<artifactId>jmh-core</artifactId>
-        	<version>1.10</version>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+            <version>1.11.3</version>
         </dependency>
         <dependency>
-        	<groupId>org.openjdk.jmh</groupId>
-        	<artifactId>jmh-generator-annprocess</artifactId>
-        	<version>1.10</version>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+            <version>1.11.3</version>
         </dependency>
         <dependency>
-        	<groupId>javax.transaction</groupId>
-        	<artifactId>jta</artifactId>
-        	<version>1.1</version>
+            <groupId>javax.transaction</groupId>
+            <artifactId>jta</artifactId>
+            <version>1.1</version>
         </dependency>
     </dependencies>
 
@@ -131,29 +131,29 @@ questions.
 
     <build>
         <plugins>
-		<plugin>
-		    <groupId>com.googlecode.addjars-maven-plugin</groupId>
-		    <artifactId>addjars-maven-plugin</artifactId>
-		    <version>1.0.5</version>
-		    <executions>
-		        <execution>
-		            <goals>
-		                <goal>add-jars</goal>
-		            </goals>
-		            <configuration>
-		                <resources>
-		                    <resource>
-		                        <directory>${basedir}/lib</directory>
-		                    </resource>
-		                </resources>
-		            </configuration>
-		        </execution>
-		    </executions>
-		</plugin>
+            <plugin>
+                <groupId>com.googlecode.addjars-maven-plugin</groupId>
+                <artifactId>addjars-maven-plugin</artifactId>
+                <version>1.0.5</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>add-jars</goal>
+                        </goals>
+                        <configuration>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/lib</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.3</version>
+                <version>3.5</version>
                 <configuration>
                     <compilerVersion>1.8</compilerVersion>
                     <source>1.7</source>
@@ -173,7 +173,8 @@ questions.
                         <configuration>
                             <finalName>microbenchmarks</finalName>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>org.openjdk.jmh.Main</mainClass>
                                 </transformer>
                             </transformers>
@@ -189,8 +190,6 @@ questions.
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
-
 </project>
