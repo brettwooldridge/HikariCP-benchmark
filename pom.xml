@@ -38,7 +38,7 @@ questions.
         <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
-            <version>2.4.2-RC1</version>
+            <version>2.5.2-SNAPSHOT</version>
         </dependency>
       <!-- dependency>
          <groupId>io.dropwizard.metrics</groupId>
@@ -90,7 +90,7 @@ questions.
         <dependency>
             <groupId>org.vibur</groupId>
             <artifactId>vibur-dbcp</artifactId>
-            <version>4.0</version>
+            <version>11.0</version>
             <exclusions>
                 <exclusion>
                     <artifactId>log4j</artifactId>
@@ -111,12 +111,12 @@ questions.
         <dependency>
         	<groupId>org.openjdk.jmh</groupId>
         	<artifactId>jmh-core</artifactId>
-        	<version>1.10</version>
+        	<version>1.17.2</version>
         </dependency>
         <dependency>
         	<groupId>org.openjdk.jmh</groupId>
         	<artifactId>jmh-generator-annprocess</artifactId>
-        	<version>1.10</version>
+        	<version>1.17.2</version>
         </dependency>
         <dependency>
         	<groupId>javax.transaction</groupId>
@@ -156,8 +156,8 @@ questions.
                 <version>3.3</version>
                 <configuration>
                     <compilerVersion>1.8</compilerVersion>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
             <plugin>

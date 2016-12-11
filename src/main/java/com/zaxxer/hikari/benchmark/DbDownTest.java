@@ -23,18 +23,18 @@ import com.zaxxer.hikari.HikariDataSource;
 
 public class DbDownTest
 {
-    private static final String JDBC_URL = "jdbc:mysql://192.168.0.114/test";
+    private static final String JDBC_URL = "jdbc:mysql://192.168.1.8/test";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbDownTest.class);
 
     private static final int MIN_POOL_SIZE = 5;
     private int maxPoolSize = MIN_POOL_SIZE;
 
-    private final DataSource hikariDS;
-    private final DataSource boneDS;
-    private final DataSource c3p0DS;
-    private final DataSource tomcatDS;
-    private final DataSource viburDS;
+    private DataSource hikariDS;
+    private DataSource boneDS;
+    private DataSource c3p0DS;
+    private DataSource tomcatDS;
+    private DataSource viburDS;
 
     public static void main(String[] args)
     {
@@ -45,10 +45,10 @@ public class DbDownTest
     private DbDownTest()
     {
         hikariDS = setupHikari();
-        c3p0DS = setupC3P0();
-        viburDS = setupVibur();
-        boneDS = setupBone();
-        tomcatDS = setupDbcp();
+        viburDS = setupVibur();  // setupVibur_withCustomQuery(); 
+//        c3p0DS = setupC3P0();
+//        boneDS = setupBone();
+//        tomcatDS = setupDbcp();
     }
 
     private void start()
@@ -67,38 +67,38 @@ public class DbDownTest
             public void run()
             {
                 try (Connection c = ds.getConnection()) {
-                    LOGGER.info(ds.getClass().getSimpleName() + " got a connection.");
+                    LOGGER.info("{} got a connection ({}).", ds.getClass().getSimpleName(), c);
                     try (Statement stmt = c.createStatement()) {
-                        LOGGER.debug(ds.getClass().getSimpleName() + " Statement " + System.identityHashCode(stmt));
+                        LOGGER.debug("{} Statement ({})", ds.getClass().getSimpleName(), System.identityHashCode(stmt));
                         stmt.setQueryTimeout(1);
                         resultSet = stmt.executeQuery("SELECT id FROM test");
                         if (resultSet.next()) {
-                            LOGGER.debug("Ran query got " + resultSet.getInt(1));
+                            LOGGER.debug("Ran query got {}", resultSet.getInt(1));
                         }
                         else {
-                            LOGGER.warn(ds.getClass().getSimpleName() + " Query executed, got no results.");
+                            LOGGER.warn("{} Query executed, got no results.", ds.getClass().getSimpleName());
                         }
                     }
                     catch (SQLException e) {
-                        LOGGER.error(ds.getClass().getSimpleName() + " Exception executing query, got a bad connection from the pool" + e.getMessage());
+                        LOGGER.error("{} Exception executing query, got a bad connection from the pool: {}", ds.getClass().getSimpleName(), e.getMessage());
                     }
                 }
                 catch (Throwable t)
                 {
-                    LOGGER.error(ds.getClass().getSimpleName() + " Exception getting connection: " + t.getMessage());
+                    LOGGER.error("{} Exception getting connection: {}", ds.getClass().getSimpleName(), t.getMessage());
                 }
             }
         }
 
-        new Timer(true).schedule(new MyTask(hikariDS), 5000, 2000);
-        new Timer(true).schedule(new MyTask(c3p0DS), 5000, 2000);
+//        new Timer(true).schedule(new MyTask(hikariDS), 5000, 2000);
         new Timer(true).schedule(new MyTask(viburDS), 5000, 2000);
-        new Timer(true).schedule(new MyTask(boneDS), 5000, 2000);
-        new Timer(true).schedule(new MyTask(tomcatDS), 5000, 2000);
+//        new Timer(true).schedule(new MyTask(c3p0DS), 5000, 2000);
+//        new Timer(true).schedule(new MyTask(boneDS), 5000, 2000);
+//        new Timer(true).schedule(new MyTask(tomcatDS), 5000, 2000);
 
         try
         {
-            Thread.sleep(TimeUnit.SECONDS.toMillis(150));
+            Thread.sleep(TimeUnit.SECONDS.toMillis(240));
         }
         catch (InterruptedException e)
         {
@@ -151,7 +151,7 @@ public class DbDownTest
     {
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(JDBC_URL);
-        config.setDriverClassName("com.mysql.jdbc.Driver");
+        // config.setDriverClassName("com.mysql.jdbc.Driver");
         config.setUsername("root");
         config.setConnectionTimeout(5000);
         config.setMinimumIdle(MIN_POOL_SIZE);
@@ -194,16 +194,38 @@ public class DbDownTest
         vibur.setJdbcUrl( JDBC_URL );
         vibur.setUsername("root");
         vibur.setPassword("");
-        vibur.setConnectionIdleLimitInSeconds(0);
         vibur.setConnectionTimeoutInMs(5000);
-        vibur.setLoginTimeoutInSeconds(5);
-        vibur.setPoolEnableConnectionTracking(true);
-        vibur.setResetDefaultsAfterUse(true);
+        vibur.setValidateTimeoutInSeconds(3);
+        vibur.setLoginTimeoutInSeconds(2);
         vibur.setPoolInitialSize(MIN_POOL_SIZE);
         vibur.setPoolMaxSize(maxPoolSize);
-        // vibur.setTestConnectionQuery("SELECT 1");
+        vibur.setConnectionIdleLimitInSeconds(1);
+        vibur.setAcquireRetryAttempts(0);
+        vibur.setReducerTimeIntervalInSeconds(0);
+        vibur.setTestConnectionQuery("isValid"); // this is the default option, can be left commented out
         vibur.start();
+        return vibur;
+    }
 
+    private DataSource setupVibur_withCustomQuery()
+    {
+        ViburDBCPDataSource vibur = new ViburDBCPDataSource();
+        vibur.setJdbcUrl( JDBC_URL );
+        vibur.setUsername("root");
+        vibur.setPassword("");
+        vibur.setConnectionTimeoutInMs(5000);
+        vibur.setValidateTimeoutInSeconds(3);
+        vibur.setLoginTimeoutInSeconds(2);
+        vibur.setPoolInitialSize(MIN_POOL_SIZE);
+        vibur.setPoolMaxSize(maxPoolSize);
+        // vibur.setConnectionIdleLimitInSeconds(0);
+        vibur.setConnectionIdleLimitInSeconds(1);
+        vibur.setAcquireRetryAttempts(0);
+        vibur.setReducerTimeIntervalInSeconds(0);
+        vibur.setTestConnectionQuery("select 1");
+        vibur.setUseNetworkTimeout(true);
+        vibur.setNetworkTimeoutExecutor(Runnable::run);
+        vibur.start();
         return vibur;
     }
 }

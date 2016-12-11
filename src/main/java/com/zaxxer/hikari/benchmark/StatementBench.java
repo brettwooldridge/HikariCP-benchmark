@@ -50,16 +50,16 @@ public class StatementBench extends BenchBase
 {
     @Benchmark
     @CompilerControl(CompilerControl.Mode.INLINE)
-    public Statement cycleStatement(ConnectionState state) throws SQLException
+    public Statement cycleStatement(Blackhole bh, ConnectionState state) throws SQLException
     {
         Statement statement = state.connection.createStatement();
-        state.consume(statement.execute("INSERT INTO test (column) VALUES (?)"));
+        bh.consume(statement.execute("INSERT INTO test (column) VALUES (?)"));
         statement.close();
         return statement;
     }
 
     @State(Scope.Thread)
-    public static class ConnectionState extends Blackhole
+    public static class ConnectionState
     {
         Connection connection;
 
