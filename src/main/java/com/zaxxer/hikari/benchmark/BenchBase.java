@@ -250,13 +250,18 @@ public class BenchBase
         vibur.setJdbcUrl( jdbcUrl );
         vibur.setUsername("brettw");
         vibur.setPassword("");
-        vibur.setPoolFair(false);
+        vibur.setConnectionTimeoutInMs(5000);
+        vibur.setValidateTimeoutInSeconds(3);
+        vibur.setLoginTimeoutInSeconds(2);
         vibur.setPoolInitialSize(MIN_POOL_SIZE);
         vibur.setPoolMaxSize(maxPoolSize);
-        vibur.setDefaultAutoCommit(false);
+        vibur.setConnectionIdleLimitInSeconds(1);
+        vibur.setAcquireRetryAttempts(0);
+        vibur.setReducerTimeIntervalInSeconds(0);
+        vibur.setUseNetworkTimeout(true);
+        vibur.setClearSQLWarnings(true);
         vibur.setResetDefaultsAfterUse(true);
-        vibur.setConnectionIdleLimitInSeconds(30);
-        vibur.start();
+        vibur.setTestConnectionQuery("isValid"); // this is the default option, can be left commented out
 
         DS = vibur;
     }

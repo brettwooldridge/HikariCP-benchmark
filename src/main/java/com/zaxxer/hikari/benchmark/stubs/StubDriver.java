@@ -22,7 +22,9 @@ import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLTransientConnectionException;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -31,60 +33,74 @@ import java.util.logging.Logger;
  */
 public class StubDriver implements Driver
 {
-    private static final Driver driver;
+   private static final Driver driver;
 
-    static
-    {
-        driver = new StubDriver();
-        try
-        {
-            DriverManager.registerDriver(driver);
-        }
-        catch (SQLException e)
-        {
-            e.printStackTrace();
-        }
-    }
+   private long connectionDelay;
 
-    /** {@inheritDoc} */
-    public Connection connect(String url, Properties info) throws SQLException
-    {
-        return new StubConnection();
-    }
+   static
+   {
+      driver = new StubDriver();
+      try {
+         DriverManager.registerDriver(driver);
+      }
+      catch (SQLException e) {
+         e.printStackTrace();
+      }
+   }
 
-    /** {@inheritDoc} */
-    public boolean acceptsURL(String url) throws SQLException
-    {
-        return true;
-    }
+   public void setConnectionDelay(long millis)
+   {
+      this.connectionDelay = millis;
+   }
 
-    /** {@inheritDoc} */
-    public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException
-    {
-        return null;
-    }
+   /** {@inheritDoc} */
+   public Connection connect(String url, Properties info) throws SQLException
+   {
+      if (connectionDelay > 0) {
+         try {
+            TimeUnit.MILLISECONDS.sleep(connectionDelay);
+         }
+         catch (InterruptedException e) {
+            throw new SQLTransientConnectionException();
+         }
+      }
 
-    /** {@inheritDoc} */
-    public int getMajorVersion()
-    {
-        return 0;
-    }
+      return new StubConnection();
+   }
 
-    /** {@inheritDoc} */
-    public int getMinorVersion()
-    {
-        return 0;
-    }
+   /** {@inheritDoc} */
+   public boolean acceptsURL(String url) throws SQLException
+   {
+      return true;
+   }
 
-    /** {@inheritDoc} */
-    public boolean jdbcCompliant()
-    {
-        return true;
-    }
+   /** {@inheritDoc} */
+   public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException
+   {
+      return null;
+   }
 
-    /** {@inheritDoc} */
-    public Logger getParentLogger() throws SQLFeatureNotSupportedException
-    {
-        return null;
-    }
+   /** {@inheritDoc} */
+   public int getMajorVersion()
+   {
+      return 0;
+   }
+
+   /** {@inheritDoc} */
+   public int getMinorVersion()
+   {
+      return 0;
+   }
+
+   /** {@inheritDoc} */
+   public boolean jdbcCompliant()
+   {
+      return true;
+   }
+
+   /** {@inheritDoc} */
+   public Logger getParentLogger() throws SQLFeatureNotSupportedException
+   {
+      return null;
+   }
 }
