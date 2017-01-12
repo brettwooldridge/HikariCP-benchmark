@@ -16,6 +16,8 @@
 
 package com.zaxxer.hikari.benchmark.stubs;
 
+import static com.zaxxer.hikari.util.UtilityElf.quietlySleep;
+
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -31,60 +33,67 @@ import java.util.logging.Logger;
  */
 public class StubDriver implements Driver
 {
-    private static final Driver driver;
+   private static final Driver driver;
+   private static long connectionDelayMs;
 
-    static
-    {
-        driver = new StubDriver();
-        try
-        {
-            DriverManager.registerDriver(driver);
-        }
-        catch (SQLException e)
-        {
-            e.printStackTrace();
-        }
-    }
+   static {
+      driver = new StubDriver();
+      try {
+         DriverManager.registerDriver(driver);
+      }
+      catch (SQLException e) {
+         e.printStackTrace();
+      }
+   }
 
-    /** {@inheritDoc} */
-    public Connection connect(String url, Properties info) throws SQLException
-    {
-        return new StubConnection();
-    }
+   public static void setConnectDelayMs(final long delay)
+   {
+      connectionDelayMs = delay;
+   }
 
-    /** {@inheritDoc} */
-    public boolean acceptsURL(String url) throws SQLException
-    {
-        return true;
-    }
+   /** {@inheritDoc} */
+   public Connection connect(String url, Properties info) throws SQLException
+   {
+      if (connectionDelayMs > 0) {
+         quietlySleep(connectionDelayMs);
+      }
 
-    /** {@inheritDoc} */
-    public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException
-    {
-        return null;
-    }
+      return new StubConnection();
+   }
 
-    /** {@inheritDoc} */
-    public int getMajorVersion()
-    {
-        return 0;
-    }
+   /** {@inheritDoc} */
+   public boolean acceptsURL(String url) throws SQLException
+   {
+      return true;
+   }
 
-    /** {@inheritDoc} */
-    public int getMinorVersion()
-    {
-        return 0;
-    }
+   /** {@inheritDoc} */
+   public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) throws SQLException
+   {
+      return null;
+   }
 
-    /** {@inheritDoc} */
-    public boolean jdbcCompliant()
-    {
-        return true;
-    }
+   /** {@inheritDoc} */
+   public int getMajorVersion()
+   {
+      return 0;
+   }
 
-    /** {@inheritDoc} */
-    public Logger getParentLogger() throws SQLFeatureNotSupportedException
-    {
-        return null;
-    }
+   /** {@inheritDoc} */
+   public int getMinorVersion()
+   {
+      return 0;
+   }
+
+   /** {@inheritDoc} */
+   public boolean jdbcCompliant()
+   {
+      return true;
+   }
+
+   /** {@inheritDoc} */
+   public Logger getParentLogger() throws SQLFeatureNotSupportedException
+   {
+      return null;
+   }
 }
