@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
@@ -23,7 +24,7 @@ import com.zaxxer.hikari.HikariDataSource;
 
 public class DbDownTest
 {
-    private static final String JDBC_URL = "jdbc:mysql://192.168.1.8/test";
+    private static final String JDBC_URL = "jdbc:mysql://172.16.207.207/test";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DbDownTest.class);
 
@@ -31,9 +32,8 @@ public class DbDownTest
     private int maxPoolSize = MIN_POOL_SIZE;
 
     private DataSource hikariDS;
-    private DataSource boneDS;
     private DataSource c3p0DS;
-    private DataSource tomcatDS;
+    private DataSource dbcp2DS;
     private DataSource viburDS;
 
     public static void main(String[] args)
@@ -45,10 +45,9 @@ public class DbDownTest
     private DbDownTest()
     {
         hikariDS = setupHikari();
-        viburDS = setupVibur();  // setupVibur_withCustomQuery(); 
-//        c3p0DS = setupC3P0();
-//        boneDS = setupBone();
-//        tomcatDS = setupDbcp();
+        viburDS = setupVibur(); 
+        c3p0DS = setupC3P0();
+        dbcp2DS = setupDbcp2();
     }
 
     private void start()
@@ -67,7 +66,7 @@ public class DbDownTest
             public void run()
             {
                 try (Connection c = ds.getConnection()) {
-                    LOGGER.info("{} got a connection ({}).", ds.getClass().getSimpleName(), c);
+                    LOGGER.info("{} got a connection.", ds.getClass().getSimpleName(), c);
                     try (Statement stmt = c.createStatement()) {
                         LOGGER.debug("{} Statement ({})", ds.getClass().getSimpleName(), System.identityHashCode(stmt));
                         stmt.setQueryTimeout(1);
@@ -90,15 +89,14 @@ public class DbDownTest
             }
         }
 
-//        new Timer(true).schedule(new MyTask(hikariDS), 5000, 2000);
+        new Timer(true).schedule(new MyTask(hikariDS), 5000, 2000);
         new Timer(true).schedule(new MyTask(viburDS), 5000, 2000);
-//        new Timer(true).schedule(new MyTask(c3p0DS), 5000, 2000);
-//        new Timer(true).schedule(new MyTask(boneDS), 5000, 2000);
-//        new Timer(true).schedule(new MyTask(tomcatDS), 5000, 2000);
+        new Timer(true).schedule(new MyTask(c3p0DS), 5000, 2000);
+        new Timer(true).schedule(new MyTask(dbcp2DS), 5000, 2000);
 
         try
         {
-            Thread.sleep(TimeUnit.SECONDS.toMillis(240));
+            Thread.sleep(TimeUnit.SECONDS.toMillis(300));
         }
         catch (InterruptedException e)
         {
@@ -106,26 +104,24 @@ public class DbDownTest
         }
     }
 
-    protected DataSource setupDbcp()
+    protected DataSource setupDbcp2()
     {
         BasicDataSource ds = new BasicDataSource();
-        ds.setUrl("jdbc:stub");
-        ds.setDriverClassName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
-        ds.setUsername("sa");
+        ds.setUrl(JDBC_URL);
+        ds.setUsername("root");
         ds.setPassword("");
         ds.setInitialSize(MIN_POOL_SIZE);
         ds.setMinIdle(MIN_POOL_SIZE);
         ds.setMaxIdle(maxPoolSize);
         ds.setMaxTotal(maxPoolSize);
-        ds.setMaxWaitMillis(8000);
+        ds.setMaxWaitMillis(5000);
+
         ds.setDefaultAutoCommit(false);
         ds.setRollbackOnReturn(true);
-        ds.setMinEvictableIdleTimeMillis((int) TimeUnit.MINUTES.toMillis(30));
+        ds.setEnableAutoCommitOnReturn(false);
         ds.setTestOnBorrow(true);
-        ds.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-        ds.setLifo(true);
+        ds.setCacheState(true);
         ds.setFastFailValidation(true);
-        ds.setRollbackOnReturn(true);
 
         return ds;
     }
@@ -156,7 +152,7 @@ public class DbDownTest
         config.setConnectionTimeout(5000);
         config.setMinimumIdle(MIN_POOL_SIZE);
         config.setMaximumPoolSize(maxPoolSize);
-        config.setInitializationFailFast(true);
+        config.setInitializationFailTimeout(0L);
         config.setConnectionTestQuery("SELECT 1");
 
         return new HikariDataSource(config);
@@ -202,29 +198,11 @@ public class DbDownTest
         vibur.setConnectionIdleLimitInSeconds(1);
         vibur.setAcquireRetryAttempts(0);
         vibur.setReducerTimeIntervalInSeconds(0);
-        vibur.setTestConnectionQuery("isValid"); // this is the default option, can be left commented out
-        vibur.start();
-        return vibur;
-    }
-
-    private DataSource setupVibur_withCustomQuery()
-    {
-        ViburDBCPDataSource vibur = new ViburDBCPDataSource();
-        vibur.setJdbcUrl( JDBC_URL );
-        vibur.setUsername("root");
-        vibur.setPassword("");
-        vibur.setConnectionTimeoutInMs(5000);
-        vibur.setValidateTimeoutInSeconds(3);
-        vibur.setLoginTimeoutInSeconds(2);
-        vibur.setPoolInitialSize(MIN_POOL_SIZE);
-        vibur.setPoolMaxSize(maxPoolSize);
-        // vibur.setConnectionIdleLimitInSeconds(0);
-        vibur.setConnectionIdleLimitInSeconds(1);
-        vibur.setAcquireRetryAttempts(0);
-        vibur.setReducerTimeIntervalInSeconds(0);
-        vibur.setTestConnectionQuery("select 1");
         vibur.setUseNetworkTimeout(true);
-        vibur.setNetworkTimeoutExecutor(Runnable::run);
+        vibur.setNetworkTimeoutExecutor(Executors.newCachedThreadPool());
+        vibur.setClearSQLWarnings(true);
+        vibur.setResetDefaultsAfterUse(true);
+        vibur.setTestConnectionQuery("isValid"); // this is the default option, can be left commented out
         vibur.start();
         return vibur;
     }
