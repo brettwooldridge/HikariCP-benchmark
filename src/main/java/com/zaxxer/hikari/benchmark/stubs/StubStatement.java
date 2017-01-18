@@ -25,6 +25,8 @@ import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 
+import com.zaxxer.hikari.util.UtilityElf;
+
 /**
  *
  * @author Brett Wooldridge
@@ -33,11 +35,11 @@ public class StubStatement implements Statement
 {
    protected int count;
    private boolean closed;
-   private static long executeDelayMs;
+   private static long executeDelay;
 
    public static void setExecuteDelayMs(final long delay)
    {
-      executeDelayMs = delay;
+      executeDelay = delay;
    }
 
    /** {@inheritDoc} */
@@ -60,11 +62,12 @@ public class StubStatement implements Statement
    /** {@inheritDoc} */
    public ResultSet executeQuery(String sql) throws SQLException
    {
-      if (executeDelayMs > 0) {
-         final long start = nanoTime();
-         do {
-            // spin
-         } while (nanoTime() - start < MILLISECONDS.toNanos(executeDelayMs));
+      if (executeDelay > 0) {
+//         final long start = nanoTime();
+//         do {
+//            // spin
+//         } while (nanoTime() - start < MILLISECONDS.toNanos(executeDelayMs));
+         UtilityElf.quietlySleep(executeDelay);
       }
       return new StubResultSet();
    }

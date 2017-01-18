@@ -1,10 +1,11 @@
 package com.zaxxer.hikari.benchmark;
 
+import static com.zaxxer.hikari.util.ConcurrentBag.IConcurrentBagEntry.STATE_IN_USE;
+import static com.zaxxer.hikari.util.ConcurrentBag.IConcurrentBagEntry.STATE_NOT_IN_USE;
 import static com.zaxxer.hikari.util.UtilityElf.quietlySleep;
 import static java.lang.Integer.parseInt;
-import static java.lang.Long.parseLong;
-import static java.lang.String.valueOf;
 import static java.lang.System.nanoTime;
+import static java.lang.Thread.MAX_PRIORITY;
 import static java.lang.Thread.currentThread;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -19,9 +20,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.stream.IntStream;
 
 import javax.sql.DataSource;
 
@@ -40,6 +45,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.benchmark.stubs.StubDriver;
 import com.zaxxer.hikari.benchmark.stubs.StubStatement;
 import com.zaxxer.hikari.pool.HikariPool;
+import com.zaxxer.hikari.pool.HikariPoolAccessor;
 
 public class SpikeLoadTest
 {
@@ -54,23 +60,27 @@ public class SpikeLoadTest
 
    private int requestCount;
 
-   private CyclicBarrier cyclicBarrier;
-
    private String pool;
-
-   private HikariPool hikariPool;
 
    private DbcpPoolAccessor dbcpPool;
 
    private ViburPoolHooks viburPool;
 
-   public static void main(String[] args)
+   private HikariPoolAccessor hikariPoolAccessor;
+
+   private AtomicInteger threadsRemaining;
+
+   private AtomicInteger threadsPending;
+
+   private ComboPooledDataSource c3p0;
+
+   public static void main(String[] args) throws InterruptedException
    {
       SpikeLoadTest test = new SpikeLoadTest();
 
       test.setup(args);
 
-      test.start();
+      test.start(parseInt(args[0]));
    }
 
    private void setup(String[] args)
@@ -78,39 +88,51 @@ public class SpikeLoadTest
       try {
          Class.forName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
          StubDriver driver = (StubDriver) DriverManager.getDriver(jdbcUrl);
-         System.err.printf("Using driver (%s): %s", jdbcUrl, driver);
-
-         StubDriver.setConnectDelayMs(parseLong(args[0]));
-         StubStatement.setExecuteDelayMs(0L);
+         LOGGER.info("Using driver ({}): {}", jdbcUrl, driver);
       }
       catch (Exception e) {
          throw new RuntimeException(e);
       }
 
       pool = args[1];
-      switch (pool) {
-      case "hikari":
-         setupHikari();
-         hikariPool = getHikariPool(DS);
-         break;
-      case "dbcp2":
-         setupDbcp2();
-         dbcpPool = (DbcpPoolAccessor) DS;
-         break;
-      case "c3p0":
-         setupC3P0();
-         break;
-      case "vibur":
-         setupVibur();
-         break;
-      default:
-         throw new IllegalArgumentException("Unknown connection pool specified");
-      }
+      IntStream.of(0, 1).forEach( i -> {
+         switch (pool) {
+         case "hikari":
+            setupHikari();
+            hikariPoolAccessor = new HikariPoolAccessor(getHikariPool(DS));
+            break;
+         case "dbcp2":
+            setupDbcp2();
+            dbcpPool = (DbcpPoolAccessor) DS;
+            break;
+         case "c3p0":
+            setupC3P0();
+            c3p0 = (ComboPooledDataSource) DS;
+            break;
+         case "vibur":
+            setupVibur();
+            break;
+         default:
+            throw new IllegalArgumentException("Unknown connection pool specified");
+         }
+
+         if (i == 0) {
+            try {
+               LOGGER.info("Warming up pool...");
+               LOGGER.info("Warmup blackhole {}", warmupPool());
+               shutdownPool(DS);
+            }
+            catch (InterruptedException e) {
+            }
+         }
+      });
+
+      quietlySleep(SECONDS.toMillis(2));
 
       this.requestCount = parseInt(args[2]);
    }
 
-   private void start()
+   private void start(int connectDelay) throws InterruptedException
    {
       List<RequestThread> list = new ArrayList<>();
       for (int i = 0; i < requestCount; i++) {
@@ -118,42 +140,52 @@ public class SpikeLoadTest
          list.add(rt);
       }
 
-      quietlySleep(SECONDS.toMillis(5));
+      StubDriver.setConnectDelayMs(connectDelay);
+      StubStatement.setExecuteDelayMs(2L);
 
-      cyclicBarrier = new CyclicBarrier(requestCount + 1);
+      Timer timer = new Timer(true);
+      ExecutorService executor = Executors.newFixedThreadPool(50);
 
-      ThreadGroup tg = new ThreadGroup("SpikeLoadTest");
+      quietlySleep(SECONDS.toMillis(2));
+
+      threadsRemaining = new AtomicInteger(requestCount);
+      threadsPending = new AtomicInteger(0);
+
+      LOGGER.info("SpikeLoadTest starting.");
+
+      currentThread().setPriority(MAX_PRIORITY);
+
+         timer.schedule(new TimerTask() {
+               public void run() {
       for (int i = 0; i < requestCount; i++) {
-         Thread t = new Thread(tg, list.get(i), valueOf(i));
-         t.start();
-      }
+         final Runnable runner = list.get(i);
+                  executor.execute(runner);
+               }
+            }
+      }, 1);
+
+      final long startTime = nanoTime();
 
       List<PoolStatistics> statsList = new ArrayList<>();
-      try {
-         LOGGER.info("SpikeLoadTest starting.");
-         cyclicBarrier.await();
+      PoolStatistics poolStatistics;
+      do {
+         poolStatistics = getPoolStatistics(startTime, threadsPending.get());
+         statsList.add(poolStatistics);
 
-         final long startTime = nanoTime();
-
+         final long spinStart = nanoTime();
          do {
-            statsList.add(getPoolStatistics(startTime));
-
-            final long spinStart = nanoTime();
-            do {
-               // spin
-            } while (nanoTime() - spinStart < 100_000 /* 0.1ms */);
-         }
-         while (tg.activeCount() > 0);
-
-         long endTime = nanoTime();
-
-         LOGGER.info("SpikeLoadTest completed in {}ms", MILLISECONDS.convert(endTime - startTime, NANOSECONDS));
-
-         dumpStats(statsList, list);
+            // spin
+         } while (nanoTime() - spinStart < 250_000 /* 0.1ms */);
       }
-      catch (InterruptedException | BrokenBarrierException e) {
-         throw new RuntimeException(e);
-      }
+      while (threadsRemaining.get() > 0  || poolStatistics.activeConnections > 0);
+
+      long endTime = nanoTime();
+
+      executor.shutdown();
+
+      LOGGER.info("SpikeLoadTest completed in {}ms", MILLISECONDS.convert(endTime - startTime, NANOSECONDS));
+
+      dumpStats(statsList, list);
    }
 
    private void dumpStats(List<PoolStatistics> statsList, List<RequestThread> list)
@@ -166,46 +198,50 @@ public class SpikeLoadTest
       for (RequestThread req : list) {
          System.out.println(req);
       }
-      
    }
 
-   private class RequestThread implements Runnable
+   private class RequestThread extends TimerTask implements Runnable
    {
+      @SuppressWarnings("unused")
+      Exception exception;
       String name;
       long startTime;
       long endTime;
-      @SuppressWarnings("unused")
-      Exception exception;
+      long connectTime;
+      long queryTime;
 
       @Override
       public void run()
       {
          name = currentThread().getName();
-         try {
-            cyclicBarrier.await();
-         }
-         catch (InterruptedException | BrokenBarrierException e1) {
-            exception = e1;
-            return;
-         }
 
+         threadsPending.incrementAndGet();
          startTime = nanoTime();
-         try (Connection connection = DS.getConnection();
-               Statement statement = connection.createStatement();
-               ResultSet resultSet = statement.executeQuery("SELECT x FROM faux")) {
+         try (Connection connection = DS.getConnection()) {
+            connectTime = nanoTime();
+            threadsPending.decrementAndGet();
+            try (Statement statement = connection.createStatement();
+                 ResultSet resultSet = statement.executeQuery("SELECT x FROM faux")) {
+               queryTime = nanoTime();
+            }
          }
          catch (SQLException e) {
             exception = e;
          }
          finally {
             endTime = nanoTime();
+            threadsRemaining.decrementAndGet();
          }
       }
 
       @Override
       public String toString()
       {
-         return String.format("%d\t%s", NANOSECONDS.toMicros(endTime - startTime), name);
+         return String.format("%d\t%d\t%d\t%s",
+                              NANOSECONDS.toMicros(endTime - startTime),
+                              NANOSECONDS.toMicros(connectTime - startTime),
+                              NANOSECONDS.toMicros(queryTime - connectTime),
+                              name);
       }
    }
 
@@ -228,35 +264,69 @@ public class SpikeLoadTest
       }
    }
 
-   private PoolStatistics getPoolStatistics(final long baseTime)
+   private PoolStatistics getPoolStatistics(final long baseTime, int remaining)
    {
       PoolStatistics stats = new PoolStatistics(baseTime);
 
       switch (pool) {
       case "hikari":
-         stats.activeConnections = hikariPool.getActiveConnections();
-         stats.idleConnections = hikariPool.getIdleConnections();
-         stats.pendingThreads = hikariPool.getThreadsAwaitingConnection();
-         stats.totalConnections = hikariPool.getTotalConnections();
+         final int[] poolStateCounts = hikariPoolAccessor.getPoolStateCounts();
+         stats.activeConnections = poolStateCounts[STATE_IN_USE];
+         stats.idleConnections = poolStateCounts[STATE_NOT_IN_USE];
+         stats.totalConnections = poolStateCounts[4];
+         stats.pendingThreads = remaining;
          break;
       case "dbcp2":
          stats.activeConnections = dbcpPool.getNumActive();
          stats.idleConnections = dbcpPool.getNumIdle();
-         stats.pendingThreads = dbcpPool.getNumWaiters();
          stats.totalConnections = dbcpPool.getNumTotal();
+         stats.pendingThreads = remaining;
          break;
       case "c3p0":
-         setupC3P0();
+         try {
+            stats.activeConnections = c3p0.getNumBusyConnectionsDefaultUser();
+            stats.idleConnections = c3p0.getNumIdleConnectionsDefaultUser();
+            stats.totalConnections = c3p0.getNumConnectionsDefaultUser();
+            stats.pendingThreads = remaining;
+         }
+         catch (SQLException e) {
+            throw new RuntimeException(e);
+         }
          break;
       case "vibur":
          stats.activeConnections = viburPool.getActive();
          stats.idleConnections = viburPool.getIdle();
-         stats.pendingThreads = 0;
          stats.totalConnections = viburPool.getTotal();
+         stats.pendingThreads = remaining;
          break;
       }
 
       return stats;
+   }
+
+   private long warmupPool() throws InterruptedException
+   {
+      final LongAdder j = new LongAdder();
+      ExecutorService executor = Executors.newFixedThreadPool(10);
+      for (int k = 0; k < 10; k++) {
+         executor.execute(() -> {
+            for (int i = 0; i < 100_000; i++) {
+               try (Connection connection = DS.getConnection();
+                    Statement statement = connection.createStatement();
+                    ResultSet resultSet = statement.executeQuery("SELECT x FROM faux")) {
+                  j.add(resultSet.getInt(i));
+               }
+               catch (SQLException e) {
+                  throw new RuntimeException(e);
+               }
+            }
+         });
+      }
+
+      executor.shutdown();
+      executor.awaitTermination(60, SECONDS);
+
+      return j.sum();
    }
 
    private void setupDbcp2()
@@ -315,12 +385,16 @@ public class SpikeLoadTest
          cpds.setPassword("");
          cpds.setAcquireIncrement(1);
          cpds.setInitialPoolSize(MIN_POOL_SIZE);
+         cpds.setNumHelperThreads(2);
          cpds.setMinPoolSize(MIN_POOL_SIZE);
          cpds.setMaxPoolSize(MAX_POOL_SIZE);
          cpds.setCheckoutTimeout(8000);
          cpds.setLoginTimeout(8);
          cpds.setTestConnectionOnCheckout(true);
-         // cpds.setPreferredTestQuery("VALUES 1");
+
+         try (Connection connection = cpds.getConnection()) {
+            // acquire and close to poke the pool into action
+         }
 
          DS = cpds;
       }
@@ -353,6 +427,20 @@ public class SpikeLoadTest
       vibur.start();
 
       DS = vibur;
+   }
+
+   private void shutdownPool(DataSource ds)
+   {
+      if (ds instanceof AutoCloseable) {
+         try {
+            ((AutoCloseable) ds).close();
+         }
+         catch (Exception e) {
+         }
+      }
+      else if (ds instanceof ComboPooledDataSource) {
+         ((ComboPooledDataSource) ds).close();
+      }
    }
 
    private static HikariPool getHikariPool(DataSource ds)

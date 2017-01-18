@@ -16,7 +16,8 @@
 
 package com.zaxxer.hikari.benchmark.stubs;
 
-import static com.zaxxer.hikari.util.UtilityElf.quietlySleep;
+import static java.lang.System.nanoTime;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.sql.Connection;
 import java.sql.Driver;
@@ -27,14 +28,15 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
 import java.util.logging.Logger;
 
+import com.zaxxer.hikari.util.UtilityElf;
+
 /**
- *
  * @author Brett Wooldridge
  */
 public class StubDriver implements Driver
 {
    private static final Driver driver;
-   private static long connectionDelayMs;
+   private static long connectionDelay;
 
    static {
       driver = new StubDriver();
@@ -48,14 +50,18 @@ public class StubDriver implements Driver
 
    public static void setConnectDelayMs(final long delay)
    {
-      connectionDelayMs = delay;
+      connectionDelay = delay; //MILLISECONDS.toNanos(delay);
    }
 
    /** {@inheritDoc} */
    public Connection connect(String url, Properties info) throws SQLException
    {
-      if (connectionDelayMs > 0) {
-         quietlySleep(connectionDelayMs);
+      if (connectionDelay > 0) {
+//         final long start = nanoTime();
+//         do {
+//            // spin
+//         } while (nanoTime() - start < connectionDelayNs);
+         UtilityElf.quietlySleep(connectionDelay);
       }
 
       return new StubConnection();

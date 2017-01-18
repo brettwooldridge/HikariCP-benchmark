@@ -78,7 +78,7 @@
 		<dependency>
 			<groupId>org.vibur</groupId>
 			<artifactId>vibur-dbcp</artifactId>
-			<version>11.0</version>
+			<version>16.1</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>log4j</artifactId>
