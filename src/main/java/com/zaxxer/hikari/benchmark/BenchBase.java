@@ -20,6 +20,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
+import java.util.concurrent.Executors;
 
 import javax.sql.DataSource;
 
@@ -145,7 +146,7 @@ public class BenchBase
 
         props.setRollbackOnReturn(true);
         props.setUseDisposableConnectionFacade(true);
-        props.setJdbcInterceptors("org.apache.tomcat.jdbc.pool.interceptor.ConnectionState;org.apache.tomcat.jdbc.pool.interceptor.StatementFinalizer");
+        props.setJdbcInterceptors("org.apache.tomcat.jdbc.pool.interceptor.ConnectionState"); //;org.apache.tomcat.jdbc.pool.interceptor.StatementFinalizer");
         props.setTestOnBorrow(true);
         props.setValidationInterval(1000);
         props.setValidator(new Validator() {
@@ -259,9 +260,10 @@ public class BenchBase
         vibur.setAcquireRetryAttempts(0);
         vibur.setReducerTimeIntervalInSeconds(0);
         vibur.setUseNetworkTimeout(true);
+        vibur.setNetworkTimeoutExecutor(Executors.newFixedThreadPool(1));
         vibur.setClearSQLWarnings(true);
         vibur.setResetDefaultsAfterUse(true);
-        vibur.setTestConnectionQuery("isValid"); // this is the default option, can be left commented out
+        vibur.start();
 
         DS = vibur;
     }
