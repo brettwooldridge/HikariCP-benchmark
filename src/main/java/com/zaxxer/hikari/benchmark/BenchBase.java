@@ -47,7 +47,7 @@ public class BenchBase
 {
     protected static final int MIN_POOL_SIZE = 0;
 
-    @Param({ "hikari", "dbcp", "dbcp2", "tomcat", "c3p0", "vibur", "one" })
+    @Param({ "hikari", "dbcp2", "tomcat", "c3p0", "vibur" })
     public String pool;
 
     @Param({ "32" })
