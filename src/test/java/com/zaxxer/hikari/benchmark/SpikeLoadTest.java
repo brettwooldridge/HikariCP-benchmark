@@ -58,21 +58,16 @@ public class SpikeLoadTest
 
    private DataSource DS;
 
+   private String pool;
    private int requestCount;
 
-   private String pool;
-
-   private DbcpPoolAccessor dbcpPool;
-
-   private ViburPoolHooks viburPool;
-
    private HikariPoolAccessor hikariPoolAccessor;
+   private DbcpPoolAccessor dbcpPool;
+   private ViburPoolHooks viburPool;
+   private ComboPooledDataSource c3p0;
 
    private AtomicInteger threadsRemaining;
-
    private AtomicInteger threadsPending;
-
-   private ComboPooledDataSource c3p0;
 
    public static void main(String[] args) throws InterruptedException
    {
@@ -155,14 +150,14 @@ public class SpikeLoadTest
 
       currentThread().setPriority(MAX_PRIORITY);
 
-         timer.schedule(new TimerTask() {
-               public void run() {
-      for (int i = 0; i < requestCount; i++) {
-         final Runnable runner = list.get(i);
+      timer.schedule(new TimerTask() {
+            public void run() {
+               for (int i = 0; i < requestCount; i++) {
+                  final Runnable runner = list.get(i);
                   executor.execute(runner);
                }
             }
-      }, 1);
+         }, 1);
 
       final long startTime = nanoTime();
 
@@ -174,8 +169,8 @@ public class SpikeLoadTest
 
          final long spinStart = nanoTime();
          do {
-            // spin
-         } while (nanoTime() - spinStart < 250_000 /* 0.1ms */);
+            // spin - don't give up our timeslice if possible
+         } while (nanoTime() - spinStart < 250_000 /* 0.25ms */);
       }
       while (threadsRemaining.get() > 0  || poolStatistics.activeConnections > 0);
 
@@ -195,6 +190,7 @@ public class SpikeLoadTest
          System.out.println(stats);
       }
 
+      System.out.println("\n" + String.join("\t", "Total", "Connect", "Query", "Thread"));
       for (RequestThread req : list) {
          System.out.println(req);
       }
@@ -260,7 +256,12 @@ public class SpikeLoadTest
       @Override
       public String toString()
       {
-         return String.format("%d\t%d\t%d\t%d\t%d", NANOSECONDS.toMicros(timestamp), totalConnections, activeConnections, idleConnections, pendingThreads);
+         return String.format("%d\t%d\t%d\t%d\t%d",
+            NANOSECONDS.toMicros(timestamp),
+            totalConnections,
+            activeConnections,
+            idleConnections,
+            pendingThreads);
       }
    }
 
