@@ -1,6 +1,6 @@
 [![Dependency Status](https://www.versioneye.com/user/projects/55501400f7db0da74e00017f/badge.svg?style=flat)](https://www.versioneye.com/user/projects/55501400f7db0da74e00017f)
 
-![](https://github.com/brettwooldridge/HikariCP/wiki/HikariCP-bench-2.4.0.png)
+![](https://github.com/brettwooldridge/HikariCP/wiki/HikariCP-bench-2.6.0.png)
 
 *ConnectionCycle* measures cycles of ``DataSource.getConnection()/Connection.close()``. *StatementCycle* measures cycles of ``Connection.prepareStatement()``, ``Statement.execute()``, ``Statement.close()``.
 
@@ -35,15 +35,15 @@ If specified with other options, ``quick`` or ``medium`` must be the first optio
 ```
 ./benchmark.sh -p pool=hikari,bone
 ```
-Where ``pool`` is a comma-separated list (*hikari*, *bone*, *tomcat*, *c3p0*, *vibur*).  Specifying a specific pool or subset of pools will shorten run times.
+Where ``pool`` is a comma-separated list (*hikari*, *dbcp2*, *tomcat*, *c3p0*, *vibur*).  Specifying a specific pool or subset of pools will shorten run times.
 
 -----------------------------------------------------------
 
 **Specify Pool Size**<br/>
 ```
-./benchmark.sh -p maxPoolSize=4
+./benchmark.sh -p maxPoolSize=16
 ```
-Pool size is only applicable for the *Connection Cycle* test, attempting to run the *Statement Cycle* test with a pool smaller than the number of threads (8) will result in testing failures.  The *Connection Cycle* test runs with 8 threads, so to test a contrained pool condition set *maxPoolSize* to a smaller number (eg. 4).  See comments about threading below.
+Pool size is only applicable for the *Connection Cycle* test, attempting to run the *Statement Cycle* test with a pool smaller than the number of threads (8) will result in testing failures.  The *Connection Cycle* test runs with 8 threads, so to test a contrained pool condition set *maxPoolSize* to a smaller number (eg. 4).
 
 -----------------------------------------------------------
 **Specify which Benchmark**<br/>
@@ -56,9 +56,6 @@ There are two benchmarks in the suite currently: *ConnectionBench* and *Statemen
 
 All of the options can be combined:
 ```
-./benchmark.sh medium -p pool=hikari,bone -p maxPoolSize=4 ".*Connection.*"
+./benchmark.sh medium -p pool=hikari,vibur -p maxPoolSize=4 ".*Connection.*"
 ```
 -----------------------------------------------------------
-#### Threading
-With microbenchmarks, it is typically not valid to test with more threads than cores, i.e. the results are not considered reliable.  An Intel Core i7 with 4-physcial cores and 4 HyperThread cores can be run with a thread count of 8 reliably.  The further above that number you test, the wider the margin of error.
-
