@@ -32,6 +32,10 @@ import javax.sql.DataSource;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.commons.dbcp2.DbcpPoolAccessor;
+import org.apache.commons.dbcp2.TomcatPoolAccessor;
+import org.apache.tomcat.jdbc.pool.PoolProperties;
+import org.apache.tomcat.jdbc.pool.PooledConnection;
+import org.apache.tomcat.jdbc.pool.Validator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vibur.dbcp.ViburDBCPDataSource;
@@ -58,16 +62,23 @@ public class SpikeLoadTest
 
    private DataSource DS;
 
-   private String pool;
    private int requestCount;
 
-   private HikariPoolAccessor hikariPoolAccessor;
+   private String pool;
+
    private DbcpPoolAccessor dbcpPool;
+
    private ViburPoolHooks viburPool;
-   private ComboPooledDataSource c3p0;
+
+   private HikariPoolAccessor hikariPoolAccessor;
 
    private AtomicInteger threadsRemaining;
+
    private AtomicInteger threadsPending;
+
+   private ComboPooledDataSource c3p0;
+
+   private TomcatPoolAccessor tomcat;
 
    public static void main(String[] args) throws InterruptedException
    {
@@ -104,6 +115,10 @@ public class SpikeLoadTest
             setupC3P0();
             c3p0 = (ComboPooledDataSource) DS;
             break;
+         case "tomcat":
+            setupTomcat();
+            tomcat = (TomcatPoolAccessor) DS;
+            break;
          case "vibur":
             setupVibur();
             break;
@@ -139,9 +154,17 @@ public class SpikeLoadTest
       StubStatement.setExecuteDelayMs(2L);
 
       Timer timer = new Timer(true);
-      ExecutorService executor = Executors.newFixedThreadPool(50);
+      ExecutorService executor = Executors.newFixedThreadPool(50); /*, new ThreadFactory() {
+         @Override
+         public Thread newThread(Runnable r)
+         {
+            Thread t = new Thread(r);
+            t.setPriority(Thread.MIN_PRIORITY);
+            return t;
+         }
+      }); */
 
-      quietlySleep(SECONDS.toMillis(2));
+      quietlySleep(SECONDS.toMillis(3));
 
       threadsRemaining = new AtomicInteger(requestCount);
       threadsPending = new AtomicInteger(0);
@@ -151,9 +174,9 @@ public class SpikeLoadTest
       currentThread().setPriority(MAX_PRIORITY);
 
       timer.schedule(new TimerTask() {
-            public void run() {
-               for (int i = 0; i < requestCount; i++) {
-                  final Runnable runner = list.get(i);
+         public void run() {
+            for (int i = 0; i < requestCount; i++) {
+               final Runnable runner = list.get(i);
                   executor.execute(runner);
                }
             }
@@ -169,8 +192,8 @@ public class SpikeLoadTest
 
          final long spinStart = nanoTime();
          do {
-            // spin - don't give up our timeslice if possible
-         } while (nanoTime() - spinStart < 250_000 /* 0.25ms */);
+            // spin
+         } while (nanoTime() - spinStart < 250_000 /* 0.1ms */);
       }
       while (threadsRemaining.get() > 0  || poolStatistics.activeConnections > 0);
 
@@ -190,7 +213,7 @@ public class SpikeLoadTest
          System.out.println(stats);
       }
 
-      System.out.println("\n" + String.join("\t", "Total", "Connect", "Query", "Thread"));
+      System.out.println("\n" + String.join("\t", "Total", "Conn", "Query", "Thread"));
       for (RequestThread req : list) {
          System.out.println(req);
       }
@@ -256,12 +279,7 @@ public class SpikeLoadTest
       @Override
       public String toString()
       {
-         return String.format("%d\t%d\t%d\t%d\t%d",
-            NANOSECONDS.toMicros(timestamp),
-            totalConnections,
-            activeConnections,
-            idleConnections,
-            pendingThreads);
+         return String.format("%d\t%d\t%d\t%d\t%d", NANOSECONDS.toMicros(timestamp), totalConnections, activeConnections, idleConnections, pendingThreads);
       }
    }
 
@@ -281,6 +299,12 @@ public class SpikeLoadTest
          stats.activeConnections = dbcpPool.getNumActive();
          stats.idleConnections = dbcpPool.getNumIdle();
          stats.totalConnections = dbcpPool.getNumTotal();
+         stats.pendingThreads = remaining;
+         break;
+      case "tomcat":
+         stats.activeConnections = tomcat.getNumActive();
+         stats.idleConnections = tomcat.getNumIdle();
+         stats.totalConnections = tomcat.getNumTotal();
          stats.pendingThreads = remaining;
          break;
       case "c3p0":
@@ -352,15 +376,15 @@ public class SpikeLoadTest
       ds.setCacheState(true);
       ds.setFastFailValidation(true);
 
-      DS = ds;
-
-      // forces internal pool creation
       try {
+         // forces internal pool creation
          ds.getLogWriter();
       }
       catch (SQLException e) {
          throw new RuntimeException(e);
       }
+
+      DS = ds;
    }
 
    private void setupHikari()
@@ -375,6 +399,43 @@ public class SpikeLoadTest
       config.setAutoCommit(false);
 
       DS = new HikariDataSource(config);
+   }
+
+   protected void setupTomcat()
+   {
+       PoolProperties props = new PoolProperties();
+       props.setUrl(jdbcUrl);
+       props.setDriverClassName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
+       props.setUsername("brettw");
+       props.setPassword("");
+       props.setInitialSize(MIN_POOL_SIZE);
+       props.setMinIdle(MIN_POOL_SIZE);
+       props.setMaxIdle(MAX_POOL_SIZE);
+       props.setMaxActive(MAX_POOL_SIZE);
+       props.setMaxWait(8000);
+
+       props.setDefaultAutoCommit(false);
+
+       props.setRollbackOnReturn(true);
+       props.setUseDisposableConnectionFacade(true);
+       props.setJdbcInterceptors("org.apache.tomcat.jdbc.pool.interceptor.ConnectionState"); //;org.apache.tomcat.jdbc.pool.interceptor.StatementFinalizer");
+       props.setTestOnBorrow(true);
+       props.setValidationInterval(250);
+       props.setValidator(new Validator() {
+           @Override
+           public boolean validate(Connection connection, int validateAction)
+           {
+               try {
+                   return (validateAction == PooledConnection.VALIDATE_BORROW ? connection.isValid(0) : true);
+               }
+               catch (SQLException e)
+               {
+                   return false;
+               }
+           }
+       });
+
+       DS = new TomcatPoolAccessor(props);
    }
 
    private void setupC3P0()
