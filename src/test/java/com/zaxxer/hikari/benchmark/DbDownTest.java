@@ -170,7 +170,6 @@ public class DbDownTest
             cpds.setAcquireIncrement(1);
             cpds.setAcquireRetryAttempts(3);
             cpds.setAcquireRetryDelay(5000);
-            cpds.setBreakAfterAcquireFailure(true);
             cpds.setInitialPoolSize(MIN_POOL_SIZE);
             cpds.setMinPoolSize(MIN_POOL_SIZE);
             cpds.setMaxPoolSize(maxPoolSize);
