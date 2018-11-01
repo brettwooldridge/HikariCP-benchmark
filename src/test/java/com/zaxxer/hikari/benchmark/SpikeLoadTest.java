@@ -30,6 +30,7 @@ import java.util.stream.IntStream;
 
 import javax.sql.DataSource;
 
+import com.alibaba.druid.pool.DruidDataSource;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.commons.dbcp2.DbcpPoolAccessor;
 import org.apache.commons.dbcp2.TomcatPoolAccessor;
@@ -80,6 +81,8 @@ public class SpikeLoadTest
 
    private TomcatPoolAccessor tomcat;
 
+   private DruidDataSource druid;
+
    public static void main(String[] args) throws InterruptedException
    {
       SpikeLoadTest test = new SpikeLoadTest();
@@ -121,6 +124,9 @@ public class SpikeLoadTest
             break;
          case "vibur":
             setupVibur();
+            break;
+         case "druid":
+            setupDruid();
             break;
          default:
             throw new IllegalArgumentException("Unknown connection pool specified");
@@ -324,6 +330,12 @@ public class SpikeLoadTest
          stats.totalConnections = viburPool.getTotal();
          stats.pendingThreads = remaining;
          break;
+      case "druid":
+         stats.activeConnections = druid.getActiveCount();
+         stats.idleConnections = druid.getMinIdle();
+         stats.totalConnections = (int) druid.getCreateCount();
+         stats.pendingThreads = remaining;
+         break;
       }
 
       return stats;
@@ -399,6 +411,27 @@ public class SpikeLoadTest
       config.setAutoCommit(false);
 
       DS = new HikariDataSource(config);
+   }
+
+   protected void setupDruid() {
+      DruidDataSource dataSource = new DruidDataSource();
+
+      dataSource.setInitialSize(MIN_POOL_SIZE);
+      dataSource.setMaxActive(MAX_POOL_SIZE);
+      dataSource.setMinIdle(MIN_POOL_SIZE);
+      dataSource.setMaxIdle(MAX_POOL_SIZE);
+      dataSource.setPoolPreparedStatements(true);
+      dataSource.setDriverClassName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
+      dataSource.setUrl(jdbcUrl);
+      dataSource.setUsername("brettw");
+      dataSource.setPassword("");
+      dataSource.setValidationQuery("SELECT 1");
+      dataSource.setTestOnBorrow(true);
+      dataSource.setDefaultAutoCommit(false);
+
+      druid = dataSource;
+
+      DS = dataSource;
    }
 
    protected void setupTomcat()

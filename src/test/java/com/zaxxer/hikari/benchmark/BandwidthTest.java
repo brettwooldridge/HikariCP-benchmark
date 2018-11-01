@@ -226,7 +226,7 @@ public class BandwidthTest
 
       vibur.setDefaultAutoCommit(false);
       vibur.setDefaultReadOnly(false);
-      vibur.setDefaultTransactionIsolationValue(TRANSACTION_READ_COMMITTED);
+      vibur.setDefaultTransactionIsolationIntValue(TRANSACTION_READ_COMMITTED);
       vibur.setResetDefaultsAfterUse(true);
 
       vibur.setReducerTimeIntervalInSeconds((int) MINUTES.toSeconds(10));
