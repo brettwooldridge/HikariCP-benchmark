@@ -428,6 +428,8 @@ public class SpikeLoadTest
       dataSource.setValidationQuery("SELECT 1");
       dataSource.setTestOnBorrow(true);
       dataSource.setDefaultAutoCommit(false);
+      dataSource.setMaxWait(8000);
+      dataSource.setUseUnfairLock(true);
 
       druid = dataSource;
 

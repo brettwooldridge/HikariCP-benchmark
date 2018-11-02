@@ -156,41 +156,46 @@ public class BenchBase
         DS = createDruid();
     }
 
-    protected void setupDruidStat() {
-        DruidDataSource dataSource = createDruid();
+    protected void setupDruidStat()
+    {
+        DruidDataSource druid = createDruid();
 
         try {
-            dataSource.addFilters("stat");
+            druid.addFilters("stat");
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        DS = dataSource;
+        DS = druid;
     }
 
-    protected void setupDruidStatMerge() {
-        DruidDataSource dataSource = createDruid();
+    protected void setupDruidStatMerge()
+    {
+        DruidDataSource druid = createDruid();
 
         StatFilter statFilter = new MergeStatFilter();
-        dataSource.getProxyFilters().add(statFilter);
-        DS = dataSource;
+        druid.getProxyFilters().add(statFilter);
+        DS = druid;
     }
 
-    protected DruidDataSource createDruid() {
-        DruidDataSource dataSource = new DruidDataSource();
+    protected DruidDataSource createDruid()
+    {
+        DruidDataSource druid = new DruidDataSource();
 
-        dataSource.setInitialSize(MIN_POOL_SIZE);
-        dataSource.setMaxActive(maxPoolSize);
-        dataSource.setMinIdle(MIN_POOL_SIZE);
-        dataSource.setPoolPreparedStatements(true);
-        dataSource.setDriverClassName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
-        dataSource.setUrl(jdbcUrl);
-        dataSource.setUsername("brettw");
-        dataSource.setPassword("");
-        dataSource.setValidationQuery("SELECT 1");
-        dataSource.setTestOnBorrow(true);
-        dataSource.setDefaultAutoCommit(false);
+        druid.setInitialSize(MIN_POOL_SIZE);
+        druid.setMaxActive(maxPoolSize);
+        druid.setMinIdle(MIN_POOL_SIZE);
+        druid.setPoolPreparedStatements(true);
+        druid.setDriverClassName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
+        druid.setUrl(jdbcUrl);
+        druid.setUsername("brettw");
+        druid.setPassword("");
+        druid.setValidationQuery("SELECT 1");
+        druid.setTestOnBorrow(true);
+        druid.setDefaultAutoCommit(false);
+        druid.setMaxWait(8000);
+        druid.setUseUnfairLock(true);
 
-        return dataSource;
+        return druid;
     }
 
     protected void setupTomcat()
