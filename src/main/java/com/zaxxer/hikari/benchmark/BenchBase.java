@@ -24,6 +24,9 @@ import java.util.concurrent.Executors;
 
 import javax.sql.DataSource;
 
+import com.alibaba.druid.filter.stat.MergeStatFilter;
+import com.alibaba.druid.filter.stat.StatFilter;
+import com.alibaba.druid.pool.DruidDataSource;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.tomcat.jdbc.pool.PoolProperties;
 import org.apache.tomcat.jdbc.pool.PooledConnection;
@@ -48,7 +51,7 @@ public class BenchBase
 {
     protected static final int MIN_POOL_SIZE = 0;
 
-    @Param({ "hikari", "dbcp2", "tomcat", "c3p0", "vibur" })
+    @Param({ "hikari", "dbcp2", "tomcat", "c3p0", "vibur", "druid", "druid-stat", "druid-stat-merge" })
     public String pool;
 
     @Param({ "32" })
@@ -100,7 +103,17 @@ public class BenchBase
         case "one":
             setupOne();
             break;
+        case "druid":
+            setupDruid();
+            break;
+        case "druid-stat":
+            setupDruidStat();
+            break;
+        case "druid-stat-merge":
+            setupDruidStatMerge();
+            break;
         }
+
     }
 
     @TearDown(Level.Trial)
@@ -126,7 +139,63 @@ public class BenchBase
         case "vibur":
             ((ViburDBCPDataSource) DS).terminate();
             break;
+        case "druid":
+            ((DruidDataSource) DS).close();
+            break;
+        case "druid-stat":
+            ((DruidDataSource) DS).close();
+            break;
+        case "druid-stat-merge":
+            ((DruidDataSource) DS).close();
+            break;
+
         }
+    }
+
+    protected void setupDruid() {
+        DS = createDruid();
+    }
+
+    protected void setupDruidStat()
+    {
+        DruidDataSource druid = createDruid();
+
+        try {
+            druid.addFilters("stat");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        DS = druid;
+    }
+
+    protected void setupDruidStatMerge()
+    {
+        DruidDataSource druid = createDruid();
+
+        StatFilter statFilter = new MergeStatFilter();
+        druid.getProxyFilters().add(statFilter);
+        DS = druid;
+    }
+
+    protected DruidDataSource createDruid()
+    {
+        DruidDataSource druid = new DruidDataSource();
+
+        druid.setInitialSize(MIN_POOL_SIZE);
+        druid.setMaxActive(maxPoolSize);
+        druid.setMinIdle(MIN_POOL_SIZE);
+        druid.setPoolPreparedStatements(true);
+        druid.setDriverClassName("com.zaxxer.hikari.benchmark.stubs.StubDriver");
+        druid.setUrl(jdbcUrl);
+        druid.setUsername("brettw");
+        druid.setPassword("");
+        druid.setValidationQuery("SELECT 1");
+        druid.setTestOnBorrow(true);
+        druid.setDefaultAutoCommit(false);
+        druid.setMaxWait(8000);
+        druid.setUseUnfairLock(true);
+
+        return druid;
     }
 
     protected void setupTomcat()
@@ -236,7 +305,7 @@ public class BenchBase
             cpds.setLoginTimeout(8);
             cpds.setTestConnectionOnCheckout(true);
             // cpds.setPreferredTestQuery("VALUES 1");
-    
+
             DS = cpds;
         }
         catch (Exception e)
@@ -273,7 +342,7 @@ public class BenchBase
         Properties props = new Properties();
         props.put("url", jdbcUrl);
         props.put("driver", "com.zaxxer.hikari.benchmark.stubs.StubDriver");
-        
+
         DS = new DataSourceImpl("one", props);
     }
 }
