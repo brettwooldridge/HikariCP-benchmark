@@ -214,12 +214,12 @@ public class SpikeLoadTest
 
    private void dumpStats(List<PoolStatistics> statsList, List<RequestThread> list)
    {
-      System.out.println(String.join("\t", "Time", "Total", "Active", "Idle", "Wait"));
+      System.out.println(String.format("%10s%8s%8s%8s%8s", "Time", "Total", "Active", "Idle", "Wait"));
       for (PoolStatistics stats : statsList) {
          System.out.println(stats);
       }
 
-      System.out.println("\n" + String.join("\t", "Total", "Conn", "Query", "Thread"));
+      System.out.println("\n" + String.format("%10s%8s%8s%20s", "Total", "Conn", "Query", "Thread"));
       for (RequestThread req : list) {
          System.out.println(req);
       }
@@ -262,7 +262,7 @@ public class SpikeLoadTest
       @Override
       public String toString()
       {
-         return String.format("%d\t%d\t%d\t%s",
+         return String.format("%10d%8d%8d%20s",
                               NANOSECONDS.toMicros(endTime - startTime),
                               NANOSECONDS.toMicros(connectTime - startTime),
                               NANOSECONDS.toMicros(queryTime - connectTime),
@@ -285,7 +285,7 @@ public class SpikeLoadTest
       @Override
       public String toString()
       {
-         return String.format("%d\t%d\t%d\t%d\t%d", NANOSECONDS.toMicros(timestamp), totalConnections, activeConnections, idleConnections, pendingThreads);
+         return String.format("%10d%8d%8d%8d%8d", NANOSECONDS.toMicros(timestamp), totalConnections, activeConnections, idleConnections, pendingThreads);
       }
    }
 
