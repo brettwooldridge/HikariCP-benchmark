@@ -150,7 +150,7 @@ public class SpikeLoadTest
 
    private void start(int connectDelay) throws InterruptedException
    {
-      List<RequestThread> list = new ArrayList<>();
+      List<RequestThread> list = new ArrayList<>(requestCount);
       for (int i = 0; i < requestCount; i++) {
          RequestThread rt = new RequestThread();
          list.add(rt);
@@ -160,7 +160,7 @@ public class SpikeLoadTest
       StubStatement.setExecuteDelayMs(2L);
 
       Timer timer = new Timer(true);
-      ExecutorService executor = Executors.newFixedThreadPool(50); /*, new ThreadFactory() {
+      ExecutorService executor = Executors.newFixedThreadPool(requestCount); /*, new ThreadFactory() {
          @Override
          public Thread newThread(Runnable r)
          {
