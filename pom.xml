@@ -124,7 +124,7 @@
 		<dependency>
         	<groupId>org.postgresql</groupId>
         	<artifactId>postgresql</artifactId>
-        	<version>9.4-1200-jdbc41</version>
+        	<version>42.2.26</version>
     	</dependency>
 	</dependencies>
 
@@ -176,8 +176,7 @@
 						<configuration>
 							<finalName>microbenchmarks</finalName>
 							<transformers>
-								<transformer
-									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
 									<mainClass>org.openjdk.jmh.Main</mainClass>
 								</transformer>
 							</transformers>
