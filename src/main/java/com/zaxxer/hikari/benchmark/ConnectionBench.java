@@ -47,7 +47,7 @@ public class ConnectionBench extends BenchBase
 {
     @Benchmark
     @CompilerControl(CompilerControl.Mode.INLINE)
-    public static Connection cycleCnnection() throws SQLException
+    public static Connection cycleConnection() throws SQLException
     {
         Connection connection = DS.getConnection();
         connection.close();
